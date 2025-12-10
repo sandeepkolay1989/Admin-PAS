@@ -38,7 +38,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
             ...styles.statCard,
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            gap: '6px',
         }}
             onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-4px)';
@@ -51,14 +51,14 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
         >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{
-                    width: '38px',
-                    height: '38px',
+                    width: '34px',
+                    height: '34px',
                     borderRadius: '10px',
                     backgroundColor: bgColor,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '22px',
+                    fontSize: '20px',
                     color: '#0f172a',
                 }}>
                     {icon}
@@ -85,18 +85,18 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
             </div>
             {badge && (
                 <div style={{
-                    marginTop: '8px',
-                    padding: '6px 10px',
-                    borderRadius: '10px',
+                    marginTop: '6px',
+                    padding: '4px 8px',
+                    borderRadius: '8px',
                     background: accentSoft,
                     color: accent,
                     fontWeight: 600,
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px'
+                    gap: '4px',
+                    fontSize: '11px'
                 }}>
-                    <span style={{ fontSize: '14px' }}>⬆</span> {badge}
+                    <span style={{ fontSize: '12px' }}>⬆</span> {badge}
                 </div>
             )}
         </div>

@@ -131,17 +131,17 @@ const darkTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '12px',
-        padding: '20px',
+        padding: '14px 16px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
         border: '1px solid #e2e8f0',
         transition: 'all 0.2s ease',
     },
 
     statValue: {
-        fontSize: '24px',
+        fontSize: '22px',
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: '4px',
+        marginBottom: '2px',
     },
 
     statLabel: {
@@ -502,17 +502,17 @@ const lightTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
-        padding: '18px 20px',
+        padding: '12px 16px',
         boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
         border: '1px solid #f1f5f9',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
-        fontSize: '30px',
+        fontSize: '26px',
         fontWeight: 'bold',
         color: '#0f172a',
-        marginBottom: '4px',
+        marginBottom: '2px',
     },
 
     statLabel: {
