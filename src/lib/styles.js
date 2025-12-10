@@ -47,7 +47,7 @@ const darkTheme = {
         justifyContent: 'space-between',
         alignItems: 'center',
         color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: '11px',
+        fontSize: '16px',
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
@@ -67,7 +67,7 @@ const darkTheme = {
         background: 'transparent',
         border: 'none',
         fontSize: '14px',
-        fontWeight: '500',
+        fontWeight: '100',
     },
 
     navItemHover: {
