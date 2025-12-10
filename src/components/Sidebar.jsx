@@ -63,15 +63,15 @@ export default function Sidebar() {
                                 onMouseEnter={() => setHoveredItem(item.id)}
                                 onMouseLeave={() => setHoveredItem(null)}
                             >
-                                <span style={{ fontSize: '18px' }}>{item.icon}</span>
-                                <span>{item.label}</span>
+                                <span style={{ fontSize: '18px', color: isDarkMode ? 'white' : 'black' }}>{item.icon}</span>
+                                <span style={{ color: isDarkMode ? 'white' : 'black' }}>{item.label}</span>
                             </div>
                         </Link>
                     )
                 })}
             </nav>
 
-            <div style={{ paddingTop: '20px', borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }}>
+            <div style={{ paddingTop: '20px', borderTop: `2px solid ${isDarkMode ? 'rgba(255, 255, 255, 0)' : 'rgba(0,0,0,0.1)'}` }}>
                 <button
                     onClick={toggleTheme}
                     style={{

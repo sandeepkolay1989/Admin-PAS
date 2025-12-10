@@ -25,23 +25,23 @@ export const AdminProvider = ({ children }) => {
     ]);
 
     const [academies, setAcademies] = useState([
-        { id: 1, name: 'Elite Sports Academy', city: 'Mumbai', sport: 'Cricket', contact: '9876543210' },
-        { id: 2, name: 'Champions Football Club', city: 'Delhi', sport: 'Football', contact: '9876543211' },
+        { id: 1, name: 'Elite Sports Academy', ownerName: 'Vikram Singh', email: 'elite@example.com', city: 'Mumbai', sport: 'Cricket', contact: '9876543210', addedBy: 'Admin', createDate: '2025-01-10', status: 'active' },
+        { id: 2, name: 'Champions Football Club', ownerName: 'Rahul Dravid', email: 'champions@example.com', city: 'Delhi', sport: 'Football', contact: '9876543211', addedBy: 'Manager', createDate: '2025-01-15', status: 'pending' },
     ]);
 
     const [sports, setSports] = useState(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('sports');
             return saved ? JSON.parse(saved) : [
-                { id: 1, name: 'Cricket', icon: '🏏', image: '' },
-                { id: 2, name: 'Football', icon: '⚽', image: '' },
-                { id: 3, name: 'Basketball', icon: '🏀', image: '' },
+                { id: 1, name: 'Cricket', icon: '🏏', image: '', isPopular: true, status: 'active' },
+                { id: 2, name: 'Football', icon: '⚽', image: '', isPopular: true, status: 'active' },
+                { id: 3, name: 'Basketball', icon: '🏀', image: '', isPopular: false, status: 'inactive' },
             ];
         }
         return [
-            { id: 1, name: 'Cricket', icon: '🏏', image: '' },
-            { id: 2, name: 'Football', icon: '⚽', image: '' },
-            { id: 3, name: 'Basketball', icon: '🏀', image: '' },
+            { id: 1, name: 'Cricket', icon: '🏏', image: '', isPopular: true, status: 'active' },
+            { id: 2, name: 'Football', icon: '⚽', image: '', isPopular: true, status: 'active' },
+            { id: 3, name: 'Basketball', icon: '🏀', image: '', isPopular: false, status: 'inactive' },
         ];
     });
 
@@ -50,9 +50,9 @@ export const AdminProvider = ({ children }) => {
     }, [sports]);
 
     const [ageGroups, setAgeGroups] = useState([
-        { id: 1, name: 'Under 10', range: '6-10 years' },
-        { id: 2, name: 'Under 15', range: '11-15 years' },
-        { id: 3, name: 'Under 18', range: '16-18 years' },
+        { id: 1, name: 'Under 10', min: '6', max: '10', status: 'active' },
+        { id: 2, name: 'Under 15', min: '11', max: '15', status: 'active' },
+        { id: 3, name: 'Under 18', min: '16', max: '18', status: 'inactive' },
     ]);
 
     const [batches, setBatches] = useState([
