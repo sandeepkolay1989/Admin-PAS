@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
@@ -22,11 +23,21 @@ export default function Sidebar() {
         { id: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
         { id: 'chat', label: 'Chat', icon: '💬', path: '/chat' },
         { id: 'reels', label: 'Reels & Highlights', icon: '🎬', path: '/reels' },
+        { id: 'roles', label: 'Role & Responsibilities', icon: '🛡️', path: '/roles' },
     ];
 
     return (
         <div style={{ ...styles.sidebar, display: 'flex', flexDirection: 'column' }}>
-            <div style={styles.logo}>⚡ Admin Panel</div>
+            <div style={styles.logo}>
+                <Image
+                    src="/playasport_logo.jpg"
+                    alt="Play A Sport Logo"
+                    fill
+                    style={{ objectFit: 'contain' }}
+                    priority
+                />
+            </div>
+
             <nav style={{ flex: 1 }}>
                 {menuItems.map(item => {
                     // Check if active. For dashboard '/', exact match. For others, startsWith
