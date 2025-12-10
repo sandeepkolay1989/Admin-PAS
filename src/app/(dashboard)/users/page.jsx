@@ -22,11 +22,29 @@ export default function UsersPage() {
         status: 'active'
     });
 
+    const [confirmModal, setConfirmModal] = useState(null); // { id, nextStatus, message }
+
     const toggleUserStatus = (id) => {
-        setUsers(users.map(user =>
-            user.id === id ? { ...user, status: user.status === 'active' ? 'inactive' : 'active' } : user
-        ));
+        const target = users.find(user => user.id === id);
+        if (!target) return;
+        const nextStatus = target.status === 'active' ? 'inactive' : 'active';
+        setConfirmModal({
+            id,
+            nextStatus,
+            message: `Change user status to "${nextStatus}"? Please confirm to complete the change.`
+        });
     };
+
+    const handleConfirmStatus = () => {
+        if (!confirmModal) return;
+        const { id, nextStatus } = confirmModal;
+        setUsers(users.map(user =>
+            user.id === id ? { ...user, status: nextStatus } : user
+        ));
+        setConfirmModal(null);
+    };
+
+    const handleCancelStatus = () => setConfirmModal(null);
 
     const handleDeleteUser = (id) => {
         if (window.confirm('Are you sure you want to delete this user?')) {
@@ -106,6 +124,53 @@ export default function UsersPage() {
 
     return (
         <div style={styles.mainContent}>
+            {confirmModal && (
+                <div style={styles.modalOverlay}>
+                    <div style={{ ...styles.modal, maxWidth: '420px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <h3 style={{ margin: 0, color: styles.title.color }}>Confirm Status</h3>
+                            <button
+                                onClick={handleCancelStatus}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    fontSize: '22px',
+                                    cursor: 'pointer',
+                                    color: styles.title.color,
+                                    padding: 0
+                                }}
+                                aria-label="Close"
+                            >
+                                ×
+                            </button>
+                        </div>
+                        <p style={{ color: styles.subtitle.color, marginBottom: '20px' }}>{confirmModal.message}</p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                            <button
+                                onClick={handleCancelStatus}
+                                style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmStatus}
+                                style={{
+                                    ...styles.buttonSuccess,
+                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    boxShadow: '0 10px 20px rgba(37, 99, 235, 0.25)',
+                                    padding: '10px 18px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Header with Title and Add Button */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
                 <h1 style={styles.title}>Users Management</h1>

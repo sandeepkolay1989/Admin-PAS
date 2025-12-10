@@ -47,7 +47,7 @@ const darkTheme = {
         justifyContent: 'space-between',
         alignItems: 'center',
         color: 'rgba(255, 255, 255, 0.5)',
-        fontSize: '11px',
+        fontSize: '16px',
         fontWeight: '600',
         textTransform: 'uppercase',
         letterSpacing: '0.5px',
@@ -67,7 +67,7 @@ const darkTheme = {
         background: 'transparent',
         border: 'none',
         fontSize: '14px',
-        fontWeight: '500',
+        fontWeight: '100',
     },
 
     navItemHover: {
@@ -131,17 +131,17 @@ const darkTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '12px',
-        padding: '20px',
+        padding: '14px 16px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
         border: '1px solid #e2e8f0',
         transition: 'all 0.2s ease',
     },
 
     statValue: {
-        fontSize: '24px',
+        fontSize: '22px',
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: '4px',
+        marginBottom: '2px',
     },
 
     statLabel: {
@@ -373,6 +373,8 @@ const darkTheme = {
 
 const lightTheme = {
     name: 'light',
+    accent: '#f97316',
+    accentSoft: '#fff7ed',
     // Layout
     container: {
         display: 'flex',
@@ -440,20 +442,19 @@ const lightTheme = {
         alignItems: 'center',
         gap: '12px',
         fontWeight: '500',
-        fontSize: '14px',
     },
 
     navItemHover: {
-        background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(30, 58, 138, 0.05) 100%)',
+        background: '#f1f5f9',
         color: '#0f172a',
         boxShadow: '0 2px 8px rgba(30, 64, 175, 0.15)',
     },
 
     navItemActive: {
-        background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+        background: '#0ea5e9',
         color: '#ffffff',
         fontWeight: '600',
-        boxShadow: '0 4px 12px rgba(30, 64, 175, 0.4), 0 2px 4px rgba(30, 64, 175, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
     },
 
     mainContent: {
@@ -469,8 +470,8 @@ const lightTheme = {
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '20px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 12px 34px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #edf2f7',
     },
 
     // Headers
@@ -501,17 +502,17 @@ const lightTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-        border: '1px solid #e2e8f0',
+        padding: '12px 16px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
+        border: '1px solid #f1f5f9',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
-        fontSize: '28px',
+        fontSize: '26px',
         fontWeight: 'bold',
         color: '#0f172a',
-        marginBottom: '4px',
+        marginBottom: '2px',
     },
 
     statLabel: {
