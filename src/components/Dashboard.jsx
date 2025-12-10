@@ -176,7 +176,8 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
                                             {booking.userName}
                                         </div>
                                         <div style={{ fontSize: '13px', color: styles.subtitle.color }}>
-                                            {booking.academy.split(' ')[0]} • {booking.batch.split(' ')[0]}
+                                            {/* Guard against missing academy/batch to avoid runtime errors */}
+                                            {(booking?.academy || '').split(' ')[0] || 'N/A'} • {(booking?.batch || '').split(' ')[0] || 'N/A'}
                                         </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
