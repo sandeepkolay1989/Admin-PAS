@@ -56,13 +56,16 @@ export const AdminProvider = ({ children }) => {
     ]);
 
     const [batches, setBatches] = useState([
-        { id: 1, academyId: 1, name: 'Morning Batch', days: 'Mon,Wed,Fri', startTime: '06:00', endTime: '08:00', capacity: 20, coach: 'Coach Sharma' },
-        { id: 2, academyId: 1, name: 'Evening Batch', days: 'Tue,Thu,Sat', startTime: '17:00', endTime: '19:00', capacity: 15, coach: 'Coach Kumar' },
+        { id: 1, academyId: 1, name: 'Morning Batch', days: ['Mon', 'Wed', 'Fri'], startTime: '06:00', endTime: '08:00', capacity: 20, studentsCount: 12, coach: 'Coach Sharma', sport: 'Cricket', status: 'active' },
+        { id: 2, academyId: 1, name: 'Evening Batch', days: ['Tue', 'Thu', 'Sat'], startTime: '17:00', endTime: '19:00', capacity: 15, studentsCount: 15, coach: 'Coach Kumar', sport: 'Football', status: 'active' },
+        { id: 3, academyId: 2, name: 'Weekend Warriors', days: ['Sat', 'Sun'], startTime: '08:00', endTime: '10:00', capacity: 25, studentsCount: 5, coach: 'Coach Singh', sport: 'Basketball', status: 'inactive' },
     ]);
 
     const [bookings, setBookings] = useState([
-        { id: 1, userName: 'John Doe', academy: 'Elite Sports Academy', batch: 'Morning Batch', date: '2025-12-10', status: 'confirmed', amount: 5000 },
-        { id: 2, userName: 'Jane Smith', academy: 'Champions Football Club', batch: 'Evening Batch', date: '2025-12-11', status: 'pending', amount: 3500 },
+        { id: 1, invoiceId: 'INV-2024-001', userName: 'Rajesh Kumar', studentName: 'Rahul Kumar', batch: 'Cricket Beginners', amount: 5000, status: 'paid', paymentMode: 'Online', date: '2024-11-01' },
+        { id: 2, invoiceId: 'INV-2024-002', userName: 'Priya Singh', studentName: 'Amit Singh', batch: 'Football Pro', amount: 3500, status: 'pending', paymentMode: 'Cash', date: '2024-11-05' },
+        { id: 3, invoiceId: 'INV-2024-003', userName: 'Suresh Raina', studentName: 'Rohan Raina', batch: 'Tennis Club', amount: 6000, status: 'failed', paymentMode: 'Online', date: '2024-11-10' },
+        { id: 4, invoiceId: 'INV-2024-004', userName: 'Anita Desai', studentName: 'Meera Desai', batch: 'Before School Swimming', amount: 4500, status: 'paid', paymentMode: 'UPI', date: '2024-11-12' },
     ]);
 
     const [reviews, setReviews] = useState([
