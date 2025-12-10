@@ -6,8 +6,8 @@ import { themes } from '@/lib/styles';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    // Check localStorage for saved theme, default to 'light'
-    const [themeMode, setThemeMode] = useState('light');
+    // Check localStorage for saved theme, default to 'dark' (which is now styled as light theme)
+    const [themeMode, setThemeMode] = useState('dark');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -43,8 +43,8 @@ export const ThemeProvider = ({ children }) => {
     if (!mounted) {
         // Render with default context values to satisfy useTheme hooks in children
         return (
-            <ThemeContext.Provider value={{ theme: themes['light'], toggleTheme, isDarkMode: false, themeMode: 'light' }}>
-                <div style={{ visibility: 'hidden' }}>{children}</div>
+            <ThemeContext.Provider value={{ theme: themes['dark'], toggleTheme, isDarkMode: true, themeMode: 'dark' }}>
+                {children}
             </ThemeContext.Provider>
         );
     }

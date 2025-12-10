@@ -65,7 +65,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
                 </div>
                 {change && (
                     <div style={{
-                        color: change.startsWith('+') ? '#10b981' : '#ef4444',
+                        color: change.startsWith('+') ? accent : '#ef4444',
                         fontSize: '15px',
                         fontWeight: '600',
                         display: 'flex',
