@@ -7,11 +7,79 @@ export default function AcademiesPage() {
     const { academies, setAcademies } = useAdmin();
     const styles = useTheme();
     const [searchTerm, setSearchTerm] = useState('');
+    const [confirmModal, setConfirmModal] = useState(null); // { id, nextStatus, message }
 
     const toggleStatus = (id) => {
+        const target = academies.find(a => a.id === id);
+        if (!target) return;
+        const nextStatus = target.status === 'active' ? 'inactive' : 'active';
+        setConfirmModal({
+            id,
+            nextStatus,
+            message: `Change status to "${nextStatus}"? Please confirm to complete the change.`
+        });
+    };
+
+    const handleConfirmStatus = () => {
+        if (!confirmModal) return;
+        const { id, nextStatus } = confirmModal;
         setAcademies(academies.map(academy =>
-            academy.id === id ? { ...academy, status: academy.status === 'active' ? 'inactive' : 'active' } : academy
+            academy.id === id ? { ...academy, status: nextStatus } : academy
         ));
+        setConfirmModal(null);
+    };
+
+    const handleCancelStatus = () => setConfirmModal(null);
+
+    const renderConfirmModal = () => {
+        if (!confirmModal) return null;
+        return (
+            <div style={styles.modalOverlay}>
+                <div style={{ ...styles.modal, maxWidth: '420px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <h3 style={{ margin: 0, color: styles.title.color }}>Confirm Status</h3>
+                        <button
+                            onClick={handleCancelStatus}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '22px',
+                                cursor: 'pointer',
+                                color: styles.title.color,
+                                padding: 0
+                            }}
+                            aria-label="Close"
+                        >
+                            ×
+                        </button>
+                    </div>
+                    <p style={{ color: styles.subtitle.color, marginBottom: '20px' }}>{confirmModal.message}</p>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                        <button
+                            onClick={handleCancelStatus}
+                            style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleConfirmStatus}
+                            style={{
+                                ...styles.buttonSuccess,
+                                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                boxShadow: '0 10px 20px rgba(37, 99, 235, 0.25)',
+                                padding: '10px 18px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            Confirm
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const handleDelete = (id) => {
@@ -28,6 +96,7 @@ export default function AcademiesPage() {
 
     return (
         <div style={styles.mainContent}>
+            {renderConfirmModal()}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <h1 style={styles.title}>Academies Management</h1>
                 <input

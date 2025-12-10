@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function UserProfile({ profile, onUpdateProfile, onLogout, onChangePassword }) {
     const styles = useTheme();
+    const { toggleTheme, isDarkMode } = styles;
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const fileInputRef = useRef(null);
@@ -75,6 +76,15 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
                         <span>🔒</span> Change Password
+                    </div>
+
+                    <div
+                        style={styles.menuItem}
+                        onClick={() => { toggleTheme(); setIsOpen(false); }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                        <span>{isDarkMode ? '☀️' : '🌙'}</span> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                     </div>
 
                     <div

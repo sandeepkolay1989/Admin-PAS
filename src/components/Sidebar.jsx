@@ -78,6 +78,20 @@ export default function Sidebar() {
         return openGroups[groupId] !== undefined ? openGroups[groupId] : hasActiveItem;
     };
 
+    const itemBaseStyle = {
+        fontSize: '14px',
+        padding: '12px 14px',
+        borderRadius: '12px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        color:'rgb(71, 85, 105)',
+        fontWeight: 500,
+        transition: 'all 0.2s ease',
+        marginLeft: '8px',
+        position: 'relative',
+    };
+
     return (
         <div style={{ 
             ...styles.sidebar, 
@@ -123,25 +137,31 @@ export default function Sidebar() {
                                     justifyContent: 'space-between',
                                     cursor: 'pointer',
                                     gap: '8px',
+                                    padding: '12px 14px',
+                                    borderRadius: '14px',
+                                    background: isOpen ? accentSoft : 'transparent',
+                                    boxShadow: isOpen ? '0 8px 24px rgba(249, 115, 22, 0.12)' : 'none',
                                 }}
                                 onClick={() => toggleGroup(group.id)}
                             >
-                                <span style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                                <span style={{ fontSize: '14px', fontWeight: '700', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
                                     {group.label}
                                 </span>
-                                <span
+                                {/* <span
                                     style={{
-                                        fontSize: '12px',
+                                        fontSize: '10px',
                                         transition: 'transform 0.2s ease',
                                         transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         color: hasActiveItem ? accent : undefined,
+                                        fontWeight: 700,
                                     }}
                                 >
-                                    ▶
-                                </span>
-                            </div>
+                                    {isOpen ? '▼' : '▶'}
+                                </span> */}
+                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+                           </div>
 
                             {/* Group Items */}
                             {isOpen && (
@@ -157,19 +177,30 @@ export default function Sidebar() {
                                             >
                                                 <div
                                                     style={{
-                                                        ...styles.navItem,
-                                                        ...(hoveredItem === item.id && !isActive ? styles.navItemHover : {}),
-                                                        ...(isActive ? styles.navItemActive : {}),
-                                                        display: 'flex',
-                                                        alignItems: 'center',
-                                                        gap: '12px',
-                                                        marginLeft: '8px',
+                                                        ...itemBaseStyle,
+                                                        ...(hoveredItem === item.id && !isActive ? {
+                                                            background: '#f8fafc',
+                                                            color: '#0f172a'
+                                                        } : {}),
+                                                        ...(isActive ? {
+                                                            background: 'linear-gradient(90deg, #ffe7d6 0%, #fff 100%)',
+                                                            color: '#ea580c',
+                                                            boxShadow: '0 8px 20px rgba(249, 115, 22, 0.18)',
+                                                            border: '1px solid #fed7aa'
+                                                        } : {}),
                                                     }}
                                                     onMouseEnter={() => setHoveredItem(item.id)}
                                                     onMouseLeave={() => setHoveredItem(null)}
                                                 >
-                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center' }}>{item.icon}</span>
-                                                    <span>{item.label}</span>
+                                                    <span style={{
+                                                        width: '4px',
+                                                        height: '20px',
+                                                        borderRadius: '6px',
+                                                        background: isActive ? '#ea580c' : 'transparent',
+                                                        transition: 'background 0.2s ease'
+                                                    }} />
+                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: isActive ? '#ea580c' : '#94a3b8' }}>{item.icon}</span>
+                                                    <span style={{ color: isActive ? '#ea580c' : '#334155' }}>{item.label}</span>
                                                 </div>
                                             </Link>
                                         );
@@ -181,25 +212,6 @@ export default function Sidebar() {
                 })}
             </nav>
 
-            <div style={{ paddingTop: '20px', borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`, position: 'relative', zIndex: 1 }}>
-                <button
-                    onClick={toggleTheme}
-                    style={{
-                        ...styles.navItem,
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '10px',
-                        background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(255, 255, 255, 0.6)',
-                        color: styles.sidebar.color,
-                        marginTop: 0
-                    }}
-                >
-                    <span style={{ fontSize: '18px' }}>{isDarkMode ? '☀️' : '🌙'}</span>
-                    <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
-                </button>
-            </div>
         </div>
     );
 }
