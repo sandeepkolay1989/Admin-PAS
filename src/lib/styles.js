@@ -320,54 +320,57 @@ const lightTheme = {
     container: {
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#e0f2fe',
+        backgroundColor: '#f8fafc', // Very light gray for background
     },
 
     sidebar: {
         width: '250px',
-        background: 'linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%)',
+        background: '#ffffff',
         padding: '20px',
-        color: '#0c4a6e',
-        boxShadow: '4px 0 12px rgba(14, 165, 233, 0.3)',
+        color: '#1e293b',
+        boxShadow: '4px 0 24px rgba(0, 0, 0, 0.05)',
+        borderRight: '1px solid #e2e8f0',
     },
 
     logo: {
-        fontSize: '24px',
-        fontWeight: 'bold',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
         marginBottom: '30px',
-        color: '#0c4a6e',
-        textAlign: 'center',
+        height: '60px',
+        position: 'relative',
     },
 
     navItem: {
-        padding: '8px 16px',
+        padding: '10px 16px',
         marginBottom: '4px',
         cursor: 'pointer',
-        borderRadius: '4px',
-        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease',
-        color: '#0c4a6e',
-        background: 'rgba(255, 255, 255, 0.5)',
-        border: '1px solid rgba(14, 165, 233, 0.2)',
-        transform: 'scale(1)',
+        borderRadius: '8px',
+        transition: 'all 0.2s ease',
+        color: '#64748b',
+        background: 'transparent',
+        border: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        fontWeight: '500',
     },
 
     navItemHover: {
-        background: 'rgba(255, 255, 255, 0.8)',
-        transform: 'translateX(5px)',
-        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
+        background: '#f1f5f9',
+        color: '#0f172a',
     },
 
     navItemActive: {
-        background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)',
+        background: '#0ea5e9',
         color: '#ffffff',
         fontWeight: '600',
-        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4), 0 2px 4px rgba(14, 165, 233, 0.3)',
-        transform: 'scale(1.02)',
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
     },
 
     mainContent: {
         flex: 1,
-        background: 'linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%)',
+        background: '#f8fafc',
         padding: '30px',
         overflowY: 'auto',
     },
@@ -378,8 +381,8 @@ const lightTheme = {
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '20px',
-        boxShadow: '0 8px 16px rgba(14, 165, 233, 0.15), 0 2px 4px rgba(56, 189, 248, 0.1)',
-        border: '1px solid rgba(14, 165, 233, 0.2)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+        border: '1px solid #e2e8f0',
     },
 
     // Headers
@@ -390,12 +393,12 @@ const lightTheme = {
     title: {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#0c4a6e',
-        marginBottom: '8px',
+        color: '#0f172a',
+        marginBottom: '4px',
     },
 
     subtitle: {
-        color: '#0369a1',
+        color: '#64748b',
         fontSize: '15px',
     },
 
@@ -411,21 +414,21 @@ const lightTheme = {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
         padding: '24px',
-        boxShadow: '0 6px 12px rgba(14, 165, 233, 0.15), 0 2px 4px rgba(56, 189, 248, 0.1)',
-        border: '1px solid rgba(14, 165, 233, 0.2)',
+        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #e2e8f0',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
         fontSize: '28px',
         fontWeight: 'bold',
-        color: '#0c4a6e',
+        color: '#0f172a',
         marginBottom: '4px',
     },
 
     statLabel: {
         fontSize: '14px',
-        color: '#0369a1',
+        color: '#64748b',
     },
 
     // Buttons
@@ -439,16 +442,16 @@ const lightTheme = {
         fontSize: '14px',
         fontWeight: '600',
         transition: 'all 0.3s ease',
-        boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)',
+        boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)',
     },
 
     buttonDanger: {
-        backgroundColor: '#f87171',
+        backgroundColor: '#ef4444',
         color: 'white',
     },
 
     buttonSuccess: {
-        backgroundColor: '#34d399',
+        backgroundColor: '#10b981',
         color: 'white',
     },
 
@@ -457,11 +460,11 @@ const lightTheme = {
         width: '100%',
         padding: '12px',
         marginBottom: '15px',
-        border: '1px solid rgba(14, 165, 233, 0.3)',
+        border: '1px solid #e2e8f0',
         borderRadius: '8px',
         fontSize: '14px',
-        backgroundColor: '#f0f9ff',
-        color: '#0c4a6e',
+        backgroundColor: '#ffffff',
+        color: '#0f172a',
         transition: 'all 0.3s ease',
     },
 
@@ -469,11 +472,11 @@ const lightTheme = {
         width: '100%',
         padding: '12px',
         marginBottom: '15px',
-        border: '1px solid rgba(14, 165, 233, 0.3)',
+        border: '1px solid #e2e8f0',
         borderRadius: '8px',
         fontSize: '14px',
-        backgroundColor: '#f0f9ff',
-        color: '#0c4a6e',
+        backgroundColor: '#ffffff',
+        color: '#0f172a',
         transition: 'all 0.3s ease',
     },
 
@@ -485,47 +488,48 @@ const lightTheme = {
 
     th: {
         textAlign: 'left',
-        padding: '12px',
-        borderBottom: '2px solid rgba(14, 165, 233, 0.3)',
+        padding: '16px',
+        borderBottom: '1px solid #e2e8f0',
         fontWeight: '600',
-        color: '#0c4a6e',
+        color: '#475569',
         fontSize: '14px',
+        backgroundColor: '#f8fafc',
     },
 
     td: {
-        padding: '12px',
-        borderBottom: '1px solid rgba(14, 165, 233, 0.15)',
-        color: '#0369a1',
+        padding: '16px',
+        borderBottom: '1px solid #f1f5f9',
+        color: '#334155',
         fontSize: '14px',
     },
 
     // Badges
     badge: {
         padding: '4px 12px',
-        borderRadius: '12px',
+        borderRadius: '9999px',
         fontSize: '12px',
         fontWeight: '600',
         display: 'inline-block',
     },
 
     badgeActive: {
-        backgroundColor: '#34d399',
-        color: 'white',
+        backgroundColor: '#dcfce7',
+        color: '#166534',
     },
 
     badgeInactive: {
-        backgroundColor: '#f87171',
-        color: 'white',
+        backgroundColor: '#fee2e2',
+        color: '#991b1b',
     },
 
     badgeConfirmed: {
-        backgroundColor: '#34d399',
-        color: 'white',
+        backgroundColor: '#dcfce7',
+        color: '#166534',
     },
 
     badgePending: {
-        backgroundColor: '#fbbf24',
-        color: 'white',
+        backgroundColor: '#fef3c7',
+        color: '#92400e',
     },
 
     // Modal
@@ -535,11 +539,12 @@ const lightTheme = {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(14, 165, 233, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.4)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
+        backdropFilter: 'blur(2px)',
     },
 
     modal: {
@@ -550,15 +555,15 @@ const lightTheme = {
         width: '90%',
         maxHeight: '90vh',
         overflowY: 'auto',
-        boxShadow: '0 24px 48px rgba(14, 165, 233, 0.25), 0 8px 16px rgba(56, 189, 248, 0.2)',
-        border: '1px solid rgba(14, 165, 233, 0.3)',
+        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        border: 'none',
     },
 
     modalTitle: {
         fontSize: '24px',
         fontWeight: 'bold',
         marginBottom: '20px',
-        color: '#0c4a6e',
+        color: '#0f172a',
     },
 
     // User Profile
@@ -574,16 +579,17 @@ const lightTheme = {
         width: '40px',
         height: '40px',
         borderRadius: '50%',
-        backgroundColor: '#0ea5e9',
+        backgroundColor: '#e2e8f0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '20px',
-        color: 'white',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+        color: '#64748b',
+        boxShadow: 'none',
         overflow: 'hidden',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
+        border: '2px solid #ffffff',
     },
 
     dropdownMenu: {
@@ -592,10 +598,10 @@ const lightTheme = {
         right: '0',
         backgroundColor: '#ffffff',
         borderRadius: '12px',
-        padding: '8px',
+        padding: '4px',
         width: '200px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)',
-        border: '1px solid rgba(14, 165, 233, 0.2)',
+        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+        border: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',
     },
@@ -603,7 +609,7 @@ const lightTheme = {
     menuItem: {
         padding: '10px 15px',
         fontSize: '14px',
-        color: '#0c4a6e',
+        color: '#334155',
         borderRadius: '8px',
         transition: 'background 0.2s',
         display: 'flex',
@@ -611,6 +617,7 @@ const lightTheme = {
         gap: '10px',
         cursor: 'pointer',
     },
+
 
     // Login
     loginContainer: {

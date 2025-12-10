@@ -19,29 +19,29 @@ export const AdminProvider = ({ children }) => {
 
     // Data states
     const [users, setUsers] = useState([
-        { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'active' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'active' },
-        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', status: 'inactive' },
+        { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', mobile: '9876543210', participants: ['John Jr'], source: 'Website', status: 'active' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', mobile: '9876543211', participants: ['Jane Jr', 'Baby Jane'], source: 'Referral', status: 'active' },
+        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', mobile: '9876543212', participants: [], source: 'Social Media', status: 'inactive' },
     ]);
 
     const [academies, setAcademies] = useState([
-        { id: 1, name: 'Elite Sports Academy', city: 'Mumbai', sport: 'Cricket', contact: '9876543210' },
-        { id: 2, name: 'Champions Football Club', city: 'Delhi', sport: 'Football', contact: '9876543211' },
+        { id: 1, name: 'Elite Sports Academy', ownerName: 'Vikram Singh', email: 'elite@example.com', city: 'Mumbai', sport: 'Cricket', contact: '9876543210', addedBy: 'Admin', createDate: '2025-01-10', status: 'active' },
+        { id: 2, name: 'Champions Football Club', ownerName: 'Rahul Dravid', email: 'champions@example.com', city: 'Delhi', sport: 'Football', contact: '9876543211', addedBy: 'Manager', createDate: '2025-01-15', status: 'pending' },
     ]);
 
     const [sports, setSports] = useState(() => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem('sports');
             return saved ? JSON.parse(saved) : [
-                { id: 1, name: 'Cricket', icon: '🏏', image: '' },
-                { id: 2, name: 'Football', icon: '⚽', image: '' },
-                { id: 3, name: 'Basketball', icon: '🏀', image: '' },
+                { id: 1, name: 'Cricket', icon: '🏏', image: '', isPopular: true, status: 'active' },
+                { id: 2, name: 'Football', icon: '⚽', image: '', isPopular: true, status: 'active' },
+                { id: 3, name: 'Basketball', icon: '🏀', image: '', isPopular: false, status: 'inactive' },
             ];
         }
         return [
-            { id: 1, name: 'Cricket', icon: '🏏', image: '' },
-            { id: 2, name: 'Football', icon: '⚽', image: '' },
-            { id: 3, name: 'Basketball', icon: '🏀', image: '' },
+            { id: 1, name: 'Cricket', icon: '🏏', image: '', isPopular: true, status: 'active' },
+            { id: 2, name: 'Football', icon: '⚽', image: '', isPopular: true, status: 'active' },
+            { id: 3, name: 'Basketball', icon: '🏀', image: '', isPopular: false, status: 'inactive' },
         ];
     });
 
@@ -50,19 +50,22 @@ export const AdminProvider = ({ children }) => {
     }, [sports]);
 
     const [ageGroups, setAgeGroups] = useState([
-        { id: 1, name: 'Under 10', range: '6-10 years' },
-        { id: 2, name: 'Under 15', range: '11-15 years' },
-        { id: 3, name: 'Under 18', range: '16-18 years' },
+        { id: 1, name: 'Under 10', min: '6', max: '10', status: 'active' },
+        { id: 2, name: 'Under 15', min: '11', max: '15', status: 'active' },
+        { id: 3, name: 'Under 18', min: '16', max: '18', status: 'inactive' },
     ]);
 
     const [batches, setBatches] = useState([
-        { id: 1, academyId: 1, name: 'Morning Batch', days: 'Mon,Wed,Fri', startTime: '06:00', endTime: '08:00', capacity: 20, coach: 'Coach Sharma' },
-        { id: 2, academyId: 1, name: 'Evening Batch', days: 'Tue,Thu,Sat', startTime: '17:00', endTime: '19:00', capacity: 15, coach: 'Coach Kumar' },
+        { id: 1, academyId: 1, name: 'Morning Batch', days: ['Mon', 'Wed', 'Fri'], startTime: '06:00', endTime: '08:00', capacity: 20, studentsCount: 12, coach: 'Coach Sharma', sport: 'Cricket', status: 'active' },
+        { id: 2, academyId: 1, name: 'Evening Batch', days: ['Tue', 'Thu', 'Sat'], startTime: '17:00', endTime: '19:00', capacity: 15, studentsCount: 15, coach: 'Coach Kumar', sport: 'Football', status: 'active' },
+        { id: 3, academyId: 2, name: 'Weekend Warriors', days: ['Sat', 'Sun'], startTime: '08:00', endTime: '10:00', capacity: 25, studentsCount: 5, coach: 'Coach Singh', sport: 'Basketball', status: 'inactive' },
     ]);
 
     const [bookings, setBookings] = useState([
-        { id: 1, userName: 'John Doe', academy: 'Elite Sports Academy', batch: 'Morning Batch', date: '2025-12-10', status: 'confirmed', amount: 5000 },
-        { id: 2, userName: 'Jane Smith', academy: 'Champions Football Club', batch: 'Evening Batch', date: '2025-12-11', status: 'pending', amount: 3500 },
+        { id: 1, invoiceId: 'INV-2024-001', userName: 'Rajesh Kumar', studentName: 'Rahul Kumar', batch: 'Cricket Beginners', amount: 5000, status: 'paid', paymentMode: 'Online', date: '2024-11-01' },
+        { id: 2, invoiceId: 'INV-2024-002', userName: 'Priya Singh', studentName: 'Amit Singh', batch: 'Football Pro', amount: 3500, status: 'pending', paymentMode: 'Cash', date: '2024-11-05' },
+        { id: 3, invoiceId: 'INV-2024-003', userName: 'Suresh Raina', studentName: 'Rohan Raina', batch: 'Tennis Club', amount: 6000, status: 'failed', paymentMode: 'Online', date: '2024-11-10' },
+        { id: 4, invoiceId: 'INV-2024-004', userName: 'Anita Desai', studentName: 'Meera Desai', batch: 'Before School Swimming', amount: 4500, status: 'paid', paymentMode: 'UPI', date: '2024-11-12' },
     ]);
 
     const [reviews, setReviews] = useState([
