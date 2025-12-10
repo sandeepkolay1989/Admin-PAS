@@ -6,8 +6,8 @@ import { themes } from '@/lib/styles';
 const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-    // Check localStorage for saved theme, default to 'light'
-    const [themeMode, setThemeMode] = useState('light');
+    // Check localStorage for saved theme, default to 'dark'
+    const [themeMode, setThemeMode] = useState('dark');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -34,16 +34,16 @@ export const ThemeProvider = ({ children }) => {
     const theme = themes[themeMode];
     const isDarkMode = themeMode === 'dark';
 
-    // To avoid hydration mismatch, we renders the app with the default theme (light) first.
-    // If the user's preference is dark, it will flicker to dark after mount.
+    // To avoid hydration mismatch, we renders the app with the default theme (dark) first.
+    // If the user's preference is light, it will flicker to light after mount.
     // To avoid flicker we could hide it until mounted, but that hurts LCP.
-    // Given this is an admin panel, a small flicker or just defaulting to light is acceptable.
+    // Given this is an admin panel, a small flicker or just defaulting to dark is acceptable.
     // CRITICALLY: We MUST wrap children in ThemeContext.Provider even if not mounted, or if we decide to hide them.
 
     if (!mounted) {
         // Render with default context values to satisfy useTheme hooks in children
         return (
-            <ThemeContext.Provider value={{ theme: themes['light'], toggleTheme, isDarkMode: false, themeMode: 'light' }}>
+            <ThemeContext.Provider value={{ theme: themes['dark'], toggleTheme, isDarkMode: true, themeMode: 'dark' }}>
                 <div style={{ visibility: 'hidden' }}>{children}</div>
             </ThemeContext.Provider>
         );
