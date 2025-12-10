@@ -320,23 +320,22 @@ const lightTheme = {
     container: {
         display: 'flex',
         minHeight: '100vh',
-        backgroundColor: '#f8fafc', // Very light gray/white background
+        backgroundColor: '#e0f2fe',
     },
 
     sidebar: {
         width: '250px',
-        background: '#ffffff', // White sidebar
+        background: 'linear-gradient(180deg, #0ea5e9 0%, #38bdf8 100%)',
         padding: '20px',
-        color: '#06012b', // UPDATED TEXT COLOR
-        boxShadow: '4px 0 12px rgba(0, 0, 0, 0.05)',
-        borderRight: '1px solid #e2e8f0',
+        color: '#0c4a6e',
+        boxShadow: '4px 0 12px rgba(14, 165, 233, 0.3)',
     },
 
     logo: {
         fontSize: '24px',
         fontWeight: 'bold',
         marginBottom: '30px',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0c4a6e',
         textAlign: 'center',
     },
 
@@ -344,31 +343,31 @@ const lightTheme = {
         padding: '8px 16px',
         marginBottom: '4px',
         cursor: 'pointer',
-        borderRadius: '6px',
-        transition: 'all 0.2s ease',
-        color: '#06012b', // UPDATED TEXT COLOR
-        background: 'transparent',
-        border: '1px solid transparent',
+        borderRadius: '4px',
+        transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s ease',
+        color: '#0c4a6e',
+        background: 'rgba(255, 255, 255, 0.5)',
+        border: '1px solid rgba(14, 165, 233, 0.2)',
         transform: 'scale(1)',
     },
 
     navItemHover: {
-        background: '#f1f5f9', // Light gray hover
-        color: '#06012b', // UPDATED TEXT COLOR
-        transform: 'translateX(3px)',
+        background: 'rgba(255, 255, 255, 0.8)',
+        transform: 'translateX(5px)',
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
     },
 
     navItemActive: {
-        background: '#3b82f6', // Bright blue for active state
-        color: '#ffffff', // Keep white for active text on blue background
+        background: 'linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%)',
+        color: '#ffffff',
         fontWeight: '600',
-        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.5)',
-        transform: 'scale(1)',
+        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4), 0 2px 4px rgba(14, 165, 233, 0.3)',
+        transform: 'scale(1.02)',
     },
 
     mainContent: {
         flex: 1,
-        background: '#f8fafc', // Matches container
+        background: 'linear-gradient(135deg, #bae6fd 0%, #e0f2fe 100%)',
         padding: '30px',
         overflowY: 'auto',
     },
@@ -379,8 +378,8 @@ const lightTheme = {
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '20px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 8px 16px rgba(14, 165, 233, 0.15), 0 2px 4px rgba(56, 189, 248, 0.1)',
+        border: '1px solid rgba(14, 165, 233, 0.2)',
     },
 
     // Headers
@@ -391,12 +390,12 @@ const lightTheme = {
     title: {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0c4a6e',
         marginBottom: '8px',
     },
 
     subtitle: {
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0369a1',
         fontSize: '15px',
     },
 
@@ -412,44 +411,44 @@ const lightTheme = {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
         padding: '24px',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 6px 12px rgba(14, 165, 233, 0.15), 0 2px 4px rgba(56, 189, 248, 0.1)',
+        border: '1px solid rgba(14, 165, 233, 0.2)',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
         fontSize: '28px',
         fontWeight: 'bold',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0c4a6e',
         marginBottom: '4px',
     },
 
     statLabel: {
         fontSize: '14px',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0369a1',
     },
 
     // Buttons
     button: {
         padding: '10px 20px',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#0ea5e9',
         color: '#ffffff',
         border: 'none',
         borderRadius: '8px',
         cursor: 'pointer',
         fontSize: '14px',
         fontWeight: '600',
-        transition: 'all 0.2s ease',
-        boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+        transition: 'all 0.3s ease',
+        boxShadow: '0 2px 8px rgba(14, 165, 233, 0.3)',
     },
 
     buttonDanger: {
-        backgroundColor: '#ef4444',
+        backgroundColor: '#f87171',
         color: 'white',
     },
 
     buttonSuccess: {
-        backgroundColor: '#22c55e',
+        backgroundColor: '#34d399',
         color: 'white',
     },
 
@@ -458,24 +457,24 @@ const lightTheme = {
         width: '100%',
         padding: '12px',
         marginBottom: '15px',
-        border: '1px solid #cbd5e1',
+        border: '1px solid rgba(14, 165, 233, 0.3)',
         borderRadius: '8px',
         fontSize: '14px',
-        backgroundColor: '#ffffff',
-        color: '#06012b', // UPDATED TEXT COLOR
-        transition: 'all 0.2s ease',
+        backgroundColor: '#f0f9ff',
+        color: '#0c4a6e',
+        transition: 'all 0.3s ease',
     },
 
     select: {
         width: '100%',
         padding: '12px',
         marginBottom: '15px',
-        border: '1px solid #cbd5e1',
+        border: '1px solid rgba(14, 165, 233, 0.3)',
         borderRadius: '8px',
         fontSize: '14px',
-        backgroundColor: '#ffffff',
-        color: '#06012b', // UPDATED TEXT COLOR
-        transition: 'all 0.2s ease',
+        backgroundColor: '#f0f9ff',
+        color: '#0c4a6e',
+        transition: 'all 0.3s ease',
     },
 
     // Table
@@ -487,18 +486,16 @@ const lightTheme = {
     th: {
         textAlign: 'left',
         padding: '12px',
-        borderBottom: '2px solid #e2e8f0',
+        borderBottom: '2px solid rgba(14, 165, 233, 0.3)',
         fontWeight: '600',
-        color: '#06012b', // UPDATED TEXT COLOR
-        fontSize: '13px',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
+        color: '#0c4a6e',
+        fontSize: '14px',
     },
 
     td: {
         padding: '12px',
-        borderBottom: '1px solid #f1f5f9',
-        color: '#06012b', // UPDATED TEXT COLOR
+        borderBottom: '1px solid rgba(14, 165, 233, 0.15)',
+        color: '#0369a1',
         fontSize: '14px',
     },
 
@@ -512,27 +509,23 @@ const lightTheme = {
     },
 
     badgeActive: {
-        backgroundColor: '#dcfce7',
-        color: '#166534',
-        border: '1px solid #bbf7d0',
+        backgroundColor: '#34d399',
+        color: 'white',
     },
 
     badgeInactive: {
-        backgroundColor: '#fee2e2',
-        color: '#991b1b',
-        border: '1px solid #fecaca',
+        backgroundColor: '#f87171',
+        color: 'white',
     },
 
     badgeConfirmed: {
-        backgroundColor: '#dcfce7',
-        color: '#166534',
-        border: '1px solid #bbf7d0',
+        backgroundColor: '#34d399',
+        color: 'white',
     },
 
     badgePending: {
-        backgroundColor: '#fef3c7',
-        color: '#92400e',
-        border: '1px solid #fde68a',
+        backgroundColor: '#fbbf24',
+        color: 'white',
     },
 
     // Modal
@@ -542,12 +535,11 @@ const lightTheme = {
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        backgroundColor: 'rgba(14, 165, 233, 0.3)',
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 1000,
-        backdropFilter: 'blur(2px)',
     },
 
     modal: {
@@ -558,15 +550,15 @@ const lightTheme = {
         width: '90%',
         maxHeight: '90vh',
         overflowY: 'auto',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-        border: 'none',
+        boxShadow: '0 24px 48px rgba(14, 165, 233, 0.25), 0 8px 16px rgba(56, 189, 248, 0.2)',
+        border: '1px solid rgba(14, 165, 233, 0.3)',
     },
 
     modalTitle: {
         fontSize: '24px',
         fontWeight: 'bold',
         marginBottom: '20px',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0c4a6e',
     },
 
     // User Profile
@@ -582,13 +574,13 @@ const lightTheme = {
         width: '40px',
         height: '40px',
         borderRadius: '50%',
-        backgroundColor: '#3b82f6',
+        backgroundColor: '#0ea5e9',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontSize: '20px',
         color: 'white',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
         overflow: 'hidden',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -602,8 +594,8 @@ const lightTheme = {
         borderRadius: '12px',
         padding: '8px',
         width: '200px',
-        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.1), 0 4px 6px rgba(0,0,0,0.05)',
+        border: '1px solid rgba(14, 165, 233, 0.2)',
         display: 'flex',
         flexDirection: 'column',
     },
@@ -611,7 +603,7 @@ const lightTheme = {
     menuItem: {
         padding: '10px 15px',
         fontSize: '14px',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#0c4a6e',
         borderRadius: '8px',
         transition: 'background 0.2s',
         display: 'flex',
@@ -620,15 +612,14 @@ const lightTheme = {
         cursor: 'pointer',
     },
 
-    // Login (kept slightly darker/blue for contrast or can be made white if needed. 
-    // Usually admin login pages have a bit of brand color. Keeping it clean.)
+    // Login
     loginContainer: {
         height: '100vh',
         width: '100vw',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: '#f8fafc',
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
         position: 'relative',
         overflow: 'hidden',
     },
@@ -637,10 +628,10 @@ const lightTheme = {
         width: '100%',
         maxWidth: '400px',
         padding: '40px',
-        backgroundColor: '#ffffff',
+        backgroundColor: 'rgba(30, 41, 59, 0.7)',
         borderRadius: '24px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+        backdropFilter: 'blur(20px)',
         display: 'flex',
         flexDirection: 'column',
         gap: '20px',
@@ -649,14 +640,17 @@ const lightTheme = {
     loginTitle: {
         fontSize: '32px',
         fontWeight: 'bold',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#f8fafc',
         textAlign: 'center',
         marginBottom: '10px',
+        background: 'linear-gradient(to right, #38bdf8, #818cf8)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
     },
 
     loginSubtitle: {
         fontSize: '14px',
-        color: '#06012b', // UPDATED TEXT COLOR
+        color: '#94a3b8',
         textAlign: 'center',
         marginBottom: '20px',
     },
@@ -665,19 +659,19 @@ const lightTheme = {
         width: '100%',
         padding: '14px 16px',
         borderRadius: '12px',
-        backgroundColor: '#ffffff',
-        border: '1px solid #cbd5e1',
-        color: '#0f172a',
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        border: '1px solid rgba(56, 189, 248, 0.2)',
+        color: '#f1f5f9',
         fontSize: '15px',
         outline: 'none',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.3s ease',
     },
 
     loginButton: {
         width: '100%',
         padding: '14px',
         borderRadius: '12px',
-        backgroundColor: '#3b82f6',
+        background: 'linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%)',
         color: 'white',
         fontWeight: 'bold',
         fontSize: '16px',
@@ -685,15 +679,15 @@ const lightTheme = {
         cursor: 'pointer',
         transition: 'transform 0.2s, box-shadow 0.2s',
         marginTop: '10px',
-        boxShadow: '0 4px 6px -1px rgba(59, 130, 246, 0.4)',
+        boxShadow: '0 4px 15px rgba(14, 165, 233, 0.4)',
     },
 
     errorMessage: {
-        color: '#ef4444',
+        color: '#f87171',
         fontSize: '13px',
         textAlign: 'center',
         marginTop: '5px',
-        backgroundColor: '#fef2f2',
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
         padding: '8px',
         borderRadius: '8px',
     },

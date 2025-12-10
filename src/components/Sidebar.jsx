@@ -1,7 +1,6 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
@@ -27,18 +26,8 @@ export default function Sidebar() {
 
     return (
         <div style={{ ...styles.sidebar, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ ...styles.logo, display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '30px' }}>
-                <div style={{ position: 'relative', width: '100%', height: '60px' }}>
-                    <Image
-                        src="/logo.jpg"
-                        alt="Play A Sport Logo"
-                        fill
-                        style={{ objectFit: 'contain' }}
-                        priority
-                    />
-                </div>
-            </div>
-            <nav>
+            <div style={styles.logo}>⚡ Admin Panel</div>
+            <nav style={{ flex: 1 }}>
                 {menuItems.map(item => {
                     // Check if active. For dashboard '/', exact match. For others, startsWith
                     const isActive = item.path === '/'
@@ -69,7 +58,9 @@ export default function Sidebar() {
                         </Link>
                     )
                 })}
+            </nav>
 
+            <div style={{ paddingTop: '20px', borderTop: `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}` }}>
                 <button
                     onClick={toggleTheme}
                     style={{
@@ -77,22 +68,17 @@ export default function Sidebar() {
                         width: '100%',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '12px',
-                        background: 'transparent',
+                        justifyContent: 'center',
+                        gap: '10px',
+                        background: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(255, 255, 255, 0.6)',
                         color: styles.sidebar.color,
-                        marginTop: '4px', // Standard margin between items
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        padding: '8px 16px',
+                        marginTop: 0
                     }}
-                    onMouseEnter={() => setHoveredItem('theme')}
-                    onMouseLeave={() => setHoveredItem(null)}
                 >
                     <span style={{ fontSize: '18px' }}>{isDarkMode ? '☀️' : '🌙'}</span>
                     <span>{isDarkMode ? 'Light Mode' : 'Dark Mode'}</span>
                 </button>
-            </nav>
+            </div>
         </div>
     );
 }
