@@ -19,9 +19,9 @@ export const AdminProvider = ({ children }) => {
 
     // Data states
     const [users, setUsers] = useState([
-        { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'active' },
-        { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'active' },
-        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', status: 'inactive' },
+        { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', mobile: '9876543210', participants: ['John Jr'], source: 'Website', status: 'active' },
+        { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', mobile: '9876543211', participants: ['Jane Jr', 'Baby Jane'], source: 'Referral', status: 'active' },
+        { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'User', mobile: '9876543212', participants: [], source: 'Social Media', status: 'inactive' },
     ]);
 
     const [academies, setAcademies] = useState([
