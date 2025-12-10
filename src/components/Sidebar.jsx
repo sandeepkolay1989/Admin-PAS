@@ -23,6 +23,7 @@ export default function Sidebar() {
         { id: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
         { id: 'chat', label: 'Chat', icon: '💬', path: '/chat' },
         { id: 'reels', label: 'Reels & Highlights', icon: '🎬', path: '/reels' },
+        { id: 'roles', label: 'Role & Responsibilities', icon: '🛡️', path: '/roles' },
     ];
 
     return (
