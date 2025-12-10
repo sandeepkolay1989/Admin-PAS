@@ -316,6 +316,8 @@ const darkTheme = {
 
 const lightTheme = {
     name: 'light',
+    accent: '#f97316',
+    accentSoft: '#fff7ed',
     // Layout
     container: {
         display: 'flex',
@@ -354,18 +356,20 @@ const lightTheme = {
         alignItems: 'center',
         gap: '12px',
         fontWeight: '500',
+        borderLeft: '3px solid transparent',
     },
 
     navItemHover: {
-        background: '#f1f5f9',
+        background: '#f8fafc',
         color: '#0f172a',
     },
 
     navItemActive: {
-        background: '#0ea5e9',
-        color: '#ffffff',
+        background: '#fff7ed',
+        color: '#0f172a',
         fontWeight: '600',
-        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
+        boxShadow: '0 8px 24px rgba(249, 115, 22, 0.12)',
+        borderLeft: '3px solid #f97316',
     },
 
     mainContent: {
@@ -381,8 +385,8 @@ const lightTheme = {
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '20px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 12px 34px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #edf2f7',
     },
 
     // Headers
@@ -413,14 +417,14 @@ const lightTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-        border: '1px solid #e2e8f0',
+        padding: '18px 20px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
+        border: '1px solid #f1f5f9',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
-        fontSize: '28px',
+        fontSize: '30px',
         fontWeight: 'bold',
         color: '#0f172a',
         marginBottom: '4px',

@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Sidebar() {
-    const { toggleTheme, isDarkMode, ...styles } = useTheme();
+    const { toggleTheme, isDarkMode, accent = '#f97316', accentSoft = '#fff7ed', ...styles } = useTheme();
     const [hoveredItem, setHoveredItem] = useState(null);
     const pathname = usePathname();
 
@@ -63,8 +63,17 @@ export default function Sidebar() {
                                 onMouseEnter={() => setHoveredItem(item.id)}
                                 onMouseLeave={() => setHoveredItem(null)}
                             >
-                                <span style={{ fontSize: '18px', color: isDarkMode ? 'white' : 'black' }}>{item.icon}</span>
-                                <span style={{ color: isDarkMode ? 'white' : 'black' }}>{item.label}</span>
+                                <span
+                                    style={{
+                                        fontSize: '18px',
+                                        color: isActive ? accent : (isDarkMode ? 'white' : '#0f172a')
+                                    }}
+                                >
+                                    {item.icon}
+                                </span>
+                                <span style={{ color: isActive ? '#0f172a' : (isDarkMode ? 'white' : '#1f2937'), fontWeight: isActive ? 700 : 500 }}>
+                                    {item.label}
+                                </span>
                             </div>
                         </Link>
                     )
