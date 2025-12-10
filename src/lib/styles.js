@@ -373,6 +373,8 @@ const darkTheme = {
 
 const lightTheme = {
     name: 'light',
+    accent: '#f97316',
+    accentSoft: '#fff7ed',
     // Layout
     container: {
         display: 'flex',
@@ -440,20 +442,19 @@ const lightTheme = {
         alignItems: 'center',
         gap: '12px',
         fontWeight: '500',
-        fontSize: '14px',
     },
 
     navItemHover: {
-        background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(30, 58, 138, 0.05) 100%)',
+        background: '#f1f5f9',
         color: '#0f172a',
         boxShadow: '0 2px 8px rgba(30, 64, 175, 0.15)',
     },
 
     navItemActive: {
-        background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+        background: '#0ea5e9',
         color: '#ffffff',
         fontWeight: '600',
-        boxShadow: '0 4px 12px rgba(30, 64, 175, 0.4), 0 2px 4px rgba(30, 64, 175, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
     },
 
     mainContent: {
@@ -469,8 +470,8 @@ const lightTheme = {
         borderRadius: '16px',
         padding: '24px',
         marginBottom: '20px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
-        border: '1px solid #e2e8f0',
+        boxShadow: '0 12px 34px rgba(0, 0, 0, 0.05)',
+        border: '1px solid #edf2f7',
     },
 
     // Headers
@@ -501,14 +502,14 @@ const lightTheme = {
     statCard: {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
-        padding: '24px',
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-        border: '1px solid #e2e8f0',
+        padding: '18px 20px',
+        boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
+        border: '1px solid #f1f5f9',
         transition: 'all 0.3s ease',
     },
 
     statValue: {
-        fontSize: '28px',
+        fontSize: '30px',
         fontWeight: 'bold',
         color: '#0f172a',
         marginBottom: '4px',

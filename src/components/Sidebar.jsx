@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Sidebar() {
-    const { toggleTheme, isDarkMode, ...styles } = useTheme();
+    const { toggleTheme, isDarkMode, accent = '#f97316', accentSoft = '#fff7ed', ...styles } = useTheme();
     const [hoveredItem, setHoveredItem] = useState(null);
     const [openGroups, setOpenGroups] = useState({});
     const pathname = usePathname();
@@ -117,7 +117,12 @@ export default function Sidebar() {
                             <div
                                 style={{
                                     ...(styles.menuGroupHeader || {}),
-                                    color: hasActiveItem ? '#ffffff' : ((styles.menuGroupHeader && styles.menuGroupHeader.color) || 'rgba(255, 255, 255, 0.5)'),
+                                    color: hasActiveItem ? accent : ((styles.menuGroupHeader && styles.menuGroupHeader.color) || (isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#64748b')),
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    cursor: 'pointer',
+                                    gap: '8px',
                                 }}
                                 onClick={() => toggleGroup(group.id)}
                             >
@@ -131,6 +136,7 @@ export default function Sidebar() {
                                         transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                                         display: 'flex',
                                         alignItems: 'center',
+                                        color: hasActiveItem ? accent : undefined,
                                     }}
                                 >
                                     ▶
