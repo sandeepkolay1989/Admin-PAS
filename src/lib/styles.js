@@ -537,13 +537,17 @@ const lightTheme = {
     },
 
     buttonDanger: {
-        backgroundColor: '#ef4444',
-        color: 'white',
+        backgroundColor: '#ef4823',
+        color: '#ffffff',
+        fontWeight: '700',
+        boxShadow: '0 4px 12px rgba(239, 72, 35, 0)',
     },
 
     buttonSuccess: {
-        backgroundColor: '#1e40af',
-        color: 'white',
+        backgroundColor: '#023B84',
+        color: '#ffffff',
+        fontWeight: '700',
+        boxShadow: '0 4px 12px rgba(2, 58, 132, 0)',    
     },
 
     // Forms

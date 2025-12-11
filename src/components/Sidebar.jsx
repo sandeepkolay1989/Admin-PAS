@@ -115,15 +115,17 @@ export default function Sidebar() {
                 pointerEvents: 'none',
                 zIndex: 0,
             }} />
-            <div style={{ ...styles.logo, position: 'relative', zIndex: 1 }}>
-                <Image
-                    src="/playasport_logo.jpg"
-                    alt="Play A Sport Logo"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                    priority
-                />
-            </div>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+                <div style={{ ...styles.logo, position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                    <Image
+                        src="/playasport_logo.jpg"
+                        alt="Play A Sport Logo"
+                        fill
+                        style={{ objectFit: 'contain' }}
+                        priority
+                    />
+                </div>
+            </Link>
 
             <nav style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 {menuGroups.map(group => {
@@ -216,7 +218,7 @@ export default function Sidebar() {
                                                         } : {}),
                                                         ...(isActive ? {
                                                             background: 'linear-gradient(90deg, rgba(249, 116, 22, 0.76) 0%, rgb(245, 180, 112) 0%, 100%)',
-                                                            color: '#ffffff',
+                                                            color: '#0b3269',
                                                             boxShadow: '0 4px 16px rgba(249, 115, 22, 0.25)',
                                                             border: '1px solid rgba(249, 115, 22, 0.3)',
                                                             fontWeight: 600,
@@ -229,11 +231,11 @@ export default function Sidebar() {
                                                         width: '4px',
                                                         height: '20px',
                                                         borderRadius: '6px',
-                                                        background: isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : 'transparent'),
+                                                        background: isActive ? '#f97316' : (hoveredItem === item.id ? '#ffffff' : 'transparent'),
                                                         transition: 'background 0.2s ease'
                                                     }} />
-                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#64748b' }}>{item.icon}</span>
-                                                    <span style={{ color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#475569' }}>{item.label}</span>
+                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: isActive ? '#0b3269' : (hoveredItem === item.id ? '#ffffff' : '#64748b') }}>{item.icon}</span>
+                                                    <span style={{ color: isActive ? '#0b3269' : (hoveredItem === item.id ? '#ffffff' : '#475569') }}>{item.label}</span>
                                                 </div>
                                             </Link>
                                         );
