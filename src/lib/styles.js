@@ -86,7 +86,7 @@ const darkTheme = {
     mainContent: {
         flex: 1,
         backgroundColor: '#f8fafc',
-        padding: '32px',
+        padding: '20px',
         overflowY: 'auto',
         position: 'relative',
     },
@@ -95,8 +95,8 @@ const darkTheme = {
     card: {
         backgroundColor: '#ffffff',
         borderRadius: '12px',
-        padding: '24px',
-        marginBottom: '24px',
+        padding: '16px',
+        marginBottom: '16px',
         boxShadow: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
         border: '1px solid #e2e8f0',
         transition: 'all 0.3s ease',
@@ -104,14 +104,14 @@ const darkTheme = {
 
     // Headers
     header: {
-        marginBottom: '30px',
+        marginBottom: '16px',
     },
 
     title: {
-        fontSize: '28px',
+        fontSize: '24px',
         fontWeight: '700',
         color: '#0f172a',
-        marginBottom: '8px',
+        marginBottom: '6px',
         letterSpacing: '-0.02em',
     },
 
@@ -211,7 +211,7 @@ const darkTheme = {
 
     th: {
         textAlign: 'left',
-        padding: '12px 16px',
+        padding: '10px 12px',
         borderBottom: '1px solid #e2e8f0',
         fontWeight: '600',
         color: '#64748b',
@@ -222,7 +222,7 @@ const darkTheme = {
     },
 
     td: {
-        padding: '12px 16px',
+        padding: '10px 12px',
         borderBottom: '1px solid #f1f5f9',
         color: '#0f172a',
         fontSize: '14px',
@@ -453,7 +453,7 @@ const lightTheme = {
     },
 
     navItemActive: {
-        background: '#0ea5e9',
+        background: '#f1f5f9',
         color: '#ffffff',
         fontWeight: '600',
         boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',
@@ -462,7 +462,7 @@ const lightTheme = {
     mainContent: {
         flex: 1,
         background: '#f8fafc',
-        padding: '30px',
+        padding: '20px',
         overflowY: 'auto',
     },
 
@@ -470,22 +470,22 @@ const lightTheme = {
     card: {
         backgroundColor: '#ffffff',
         borderRadius: '16px',
-        padding: '24px',
-        marginBottom: '20px',
+        padding: '16px',
+        marginBottom: '16px',
         boxShadow: '0 12px 34px rgba(0, 0, 0, 0.31)',
         border: '1px solidrgb(193, 219, 244)',
     },
 
     // Headers
     header: {
-        marginBottom: '30px',
+        marginBottom: '16px',
     },
 
     title: {
-        fontSize: '32px',
+        fontSize: '24px',
         fontWeight: 'bold',
         color: '#0f172a',
-        marginBottom: '4px',
+        marginBottom: '6px',
     },
 
     subtitle: {
@@ -537,13 +537,17 @@ const lightTheme = {
     },
 
     buttonDanger: {
-        backgroundColor: '#ef4444',
-        color: 'white',
+        backgroundColor: '#ef4823',
+        color: '#ffffff',
+        fontWeight: '700',
+        boxShadow: '0 4px 12px rgba(239, 72, 35, 0)',
     },
 
     buttonSuccess: {
-        backgroundColor: '#1e40af',
-        color: 'white',
+        backgroundColor: '#023B84',
+        color: '#ffffff',
+        fontWeight: '700',
+        boxShadow: '0 4px 12px rgba(2, 58, 132, 0)',    
     },
 
     // Forms
@@ -580,7 +584,7 @@ const lightTheme = {
 
     th: {
         textAlign: 'left',
-        padding: '16px',
+        padding: '12px',
         borderBottom: '1px solid #e2e8f0',
         fontWeight: '600',
         color: '#475569',
@@ -589,7 +593,7 @@ const lightTheme = {
     },
 
     td: {
-        padding: '16px',
+        padding: '12px',
         borderBottom: '1px solid #f1f5f9',
         color: '#334155',
         fontSize: '14px',

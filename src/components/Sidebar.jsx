@@ -4,6 +4,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
+import {
+    LayoutDashboard,
+    Users,
+    School,
+    Trophy,
+    Baby,
+    Layers,
+    CalendarDays,
+    Star,
+    Clapperboard,
+    MessageCircle,
+    Bell,
+    Settings,
+    Shield
+} from 'lucide-react';
 
 export default function Sidebar() {
     const { toggleTheme, isDarkMode, accent = '#f97316', accentSoft = '#fff7ed', ...styles } = useTheme();
@@ -16,43 +31,43 @@ export default function Sidebar() {
             id: 'main',
             label: 'Main',
             items: [
-                { id: 'dashboard', label: 'Overview', icon: '📊', path: '/' },
+                        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/' },
             ]
         },
         {
             id: 'management',
             label: 'Management',
             items: [
-                { id: 'users', label: 'Users', icon: '👥', path: '/users' },
-                { id: 'academies', label: 'Academies', icon: '🏫', path: '/academies' },
-                { id: 'sports', label: 'Sports', icon: '⚽', path: '/sports' },
-                { id: 'ageGroups', label: 'Age Groups', icon: '👶', path: '/ageGroups' },
-                { id: 'batches', label: 'Batches', icon: '📚', path: '/batches' },
+                        { id: 'users', label: 'Users', icon: Users, path: '/users' },
+                        { id: 'academies', label: 'Academies', icon: School, path: '/academies' },
+                        { id: 'sports', label: 'Sports', icon: Trophy, path: '/sports' },
+                        { id: 'ageGroups', label: 'Age Groups', icon: Baby, path: '/ageGroups' },
+                        { id: 'batches', label: 'Batches', icon: Layers, path: '/batches' },
             ]
         },
         {
             id: 'activities',
             label: 'Activities',
             items: [
-                { id: 'bookings', label: 'Bookings', icon: '📅', path: '/bookings' },
-                { id: 'reviews', label: 'Reviews', icon: '⭐', path: '/reviews' },
-                { id: 'reels', label: 'Reels & Highlights', icon: '🎬', path: '/reels' },
+                        { id: 'bookings', label: 'Bookings', icon: CalendarDays, path: '/bookings' },
+                        { id: 'reviews', label: 'Reviews', icon: Star, path: '/reviews' },
+                        { id: 'reels', label: 'Reels & Highlights', icon: Clapperboard, path: '/reels' },
             ]
         },
         {
             id: 'communication',
             label: 'Communication',
             items: [
-                { id: 'chat', label: 'Chat', icon: '💬', path: '/chat' },
-                { id: 'notifications', label: 'Notifications', icon: '🔔', path: '/notifications' },
+                        { id: 'chat', label: 'Chat', icon: MessageCircle, path: '/chat' },
+                        { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications' },
             ]
         },
         {
             id: 'system',
             label: 'System',
             items: [
-                { id: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
-                { id: 'roles', label: 'Role & Responsibilities', icon: '🛡️', path: '/roles' },
+                        { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
+                        { id: 'roles', label: 'Role & Responsibilities', icon: Shield, path: '/roles' },
             ]
         },
     ];
@@ -115,15 +130,17 @@ export default function Sidebar() {
                 pointerEvents: 'none',
                 zIndex: 0,
             }} />
-            <div style={{ ...styles.logo, position: 'relative', zIndex: 1 }}>
-                <Image
-                    src="/playasport_logo.jpg"
-                    alt="Play A Sport Logo"
-                    fill
-                    style={{ objectFit: 'contain' }}
-                    priority
-                />
-            </div>
+            <Link href="/" style={{ textDecoration: 'none' }}>
+                <div style={{ ...styles.logo, position: 'relative', zIndex: 1, cursor: 'pointer' }}>
+                    <Image
+                        src="/playasport_logo.jpg"
+                        alt="Play A Sport Logo"
+                        fill
+                        style={{ objectFit: 'contain' }}
+                        priority
+                    />
+                </div>
+            </Link>
 
             <nav style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 {menuGroups.map(group => {
@@ -215,7 +232,7 @@ export default function Sidebar() {
                                                             boxShadow: '0 4px 12px rgba(234, 177, 121, 0.35)',
                                                         } : {}),
                                                         ...(isActive ? {
-                                                            background: 'linear-gradient(90deg, rgba(249, 116, 22, 0.76) 0%, rgb(245, 180, 112) 0%, 100%)',
+                                                            background: 'linear-gradient(90deg, rgba(249, 116, 22, 0.76) 0%, rgb(245, 180, 112) 100%)',
                                                             color: '#ffffff',
                                                             boxShadow: '0 4px 16px rgba(249, 115, 22, 0.25)',
                                                             border: '1px solid rgba(249, 115, 22, 0.3)',
@@ -229,11 +246,13 @@ export default function Sidebar() {
                                                         width: '4px',
                                                         height: '20px',
                                                         borderRadius: '6px',
-                                                        background: isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : 'transparent'),
+                                                        background: isActive ? '#f97316' : (hoveredItem === item.id ? '#ffffff' : 'transparent'),
                                                         transition: 'background 0.2s ease'
                                                     }} />
-                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#64748b' }}>{item.icon}</span>
-                                                    <span style={{ color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#475569' }}>{item.label}</span>
+                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : '#64748b') }}>
+                                                        {item.icon ? <item.icon size={16} color={isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : '#64748b')} /> : null}
+                                                    </span>
+                                                    <span style={{ color: isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : '#475569') }}>{item.label}</span>
                                                 </div>
                                             </Link>
                                         );
