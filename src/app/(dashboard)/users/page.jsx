@@ -5,6 +5,8 @@ import { useTheme } from '@/context/ThemeContext';
 import Modal from '@/components/Modal';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
+import { X, HelpCircle } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 
 export default function UsersPage() {
     const { users, setUsers } = useAdmin();
@@ -155,44 +157,36 @@ export default function UsersPage() {
         return matchesSearch && matchesStatus && matchesUserType;
     });
 
-    // Reset to first page when filters or search change
-    useEffect(() => {
-        setCurrentPage(1);
-    }, [searchTerm, statusFilter, pageSize, userTypeFilter]);
-
-    const totalUsers = users.length;
-    const totalGuardians = users.filter((u) => {
-        const role = (u.role || '').toLowerCase();
-        return role.includes('guardian') || role.includes('parent');
-    }).length;
-    const totalStudents = users.filter((u) => {
-        const role = (u.role || '').toLowerCase();
-        return role.includes('student') || role.includes('user');
-    }).length;
-    const activeUsers = users.filter((u) => u.isActive && !u.isDeleted).length;
-
-    // clamp page when filters change
-    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / pageSize));
-    const safeCurrentPage = Math.min(currentPage, totalPages);
-    const start = (safeCurrentPage - 1) * pageSize;
-    const end = start + pageSize;
-    const paginatedUsers = filteredUsers.slice(start, end);
+    const thCenter = { ...styles.th, textAlign: 'center' };
+    const tdCenter = { ...styles.td, textAlign: 'center', verticalAlign: 'middle' };
 
     return (
         <div style={styles.mainContent}>
             {confirmModal && (
                 <div style={styles.modalOverlay}>
-                    <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '28px' }}>
-                        <span style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', fontSize: '16px', fontWeight: 700, color: '#f97316' }}></span>
+                <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '52px' }}>
+                    <span style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'block',
+                        width: '32px',
+                        height: '32px',
+                        pointerEvents: 'none',
+                        color: '#f97316'
+                    }}>
+                        <HelpCircle size={32} />
+                    </span>
                         <button
                             onClick={handleCancelStatus}
                             style={{
                                 position: 'absolute',
-                                top: '8px',
-                                right: '8px',
+                                top: '16px',
+                                right: '16px',
                                 background: 'none',
                                 border: 'none',
-                                fontSize: '20px',
+                            fontSize: '0px',
                                 cursor: 'pointer',
                                 color: '#0f172a',
                                 padding: 0,
@@ -200,11 +194,11 @@ export default function UsersPage() {
                             }}
                             aria-label="Close"
                         >
-                            <img src="/cross-icon.svg" alt="close" width={14} height={14} />
+                        <X size={18} color="#0f172a" />
                         </button>
-                        <h3 style={{ margin: '0 0 12px 0', color: '#f97316', fontWeight: 700 }}>Are You Sure?</h3>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#de0404', fontWeight: 700 }}>Are You Sure?</h3>
                         <p style={{ color: '#242222', marginBottom: '20px' }}>
-                            Do you want to change this status to <span style={{ color: '#fa0602', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
+                            Do you want to change this status to <span style={{ color: '#f97316', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
                         </p>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button
@@ -253,105 +247,36 @@ export default function UsersPage() {
                 <div />
             </div>
 
-            {/* Filters + search */}
-            <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                marginBottom: '12px',
-                background: '#fff',
-                padding: '14px',
-                borderRadius: '14px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)'
-            }}>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
-                        <span style={{ color: '#94a3b8' }}>🔍</span>
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            style={{
-                                border: 'none',
-                                outline: 'none',
-                                width: '100%',
-                                fontSize: '14px',
-                                color: '#0f172a',
-                            }}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                        <button style={{
-                            ...styles.button,
-                            background: '#1d4ed8',
-                            boxShadow: '0 10px 24px rgba(37, 99, 235, 0.25)',
-                            borderRadius: '12px',
-                            padding: '10px 16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px'
-                        }}>
-                            <span style={{ fontSize: '16px' }}>⬇️</span> Export CSV
-                        </button>
-                        <Button
-                            variant="success"
-                            onClick={() => setShowAddModal(true)}
-                            style={{
-                                marginBottom: 0,
-                                backgroundColor: '#0284c7',
-                                boxShadow: '0 10px 24px rgba(2, 132, 199, 0.25)',
-                                borderRadius: '12px',
-                                padding: '10px 16px',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px'
-                            }}
-                        >
-                            ➕ Add User
-                        </Button>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                        {[
-                            { key: 'all', label: 'All Users' },
-                            { key: 'guardian', label: 'Guardians' },
-                            { key: 'student', label: 'Students' },
-                        ].map((item) => {
-                            const active = userTypeFilter === item.key;
-                            return (
-                                <button
-                                    key={item.key}
-                                    onClick={() => setUserTypeFilter(item.key)}
-                                    style={{
-                                        padding: '10px 14px',
-                                        borderRadius: '12px',
-                                        border: active ? '1px solid #f97316' : '1px solid #e2e8f0',
-                                        background: active ? '#fff7ed' : '#fff',
-                                        color: active ? '#c2410c' : '#0f172a',
-                                        fontWeight: active ? 700 : 600,
-                                        cursor: 'pointer',
-                                        boxShadow: active ? '0 6px 18px rgba(249, 115, 22, 0.15)' : 'none'
-                                    }}
-                                >
-                                    {item.label}
-                                </button>
-                            );
-                        })}
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                            {[
-                                { key: 'grid', label: 'Grid View' },
-                                { key: 'list', label: 'List View' },
-                            ].map((mode) => {
-                                const active = viewMode === mode.key;
-                                const isGrid = mode.key === 'grid';
-                                return (
-                                    <button
-                                        key={mode.key}
-                                        onClick={() => setViewMode(mode.key)}
-                                        aria-label={mode.label}
+            <div style={styles.card}>
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
+                            <th style={thCenter}>Sr. No.</th>
+                            <th style={thCenter}>User's Name</th>
+                            <th style={thCenter}>Email</th>
+                            <th style={thCenter}>Mobile Number</th>
+                            <th style={thCenter}>All Participants</th>
+                            <th style={thCenter}>Source</th>
+                            <th style={thCenter}>Active</th>
+                            <th style={thCenter}>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {filteredUsers.map((user, index) => (
+                            <tr key={user.id}>
+                                <td style={tdCenter}>{index + 1}</td>
+                                <td style={{ ...tdCenter, fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                    {user.name}
+                                </td>
+                                <td style={tdCenter}>{user.email}</td>
+                                <td style={tdCenter}>{user.mobile || '-'}</td>
+                                <td style={tdCenter}>
+                                    {Array.isArray(user.participants) ? user.participants.length : 0}
+                                </td>
+                                <td style={tdCenter}>{user.source || 'Unknown'}</td>
+                                <td style={tdCenter}>
+                                    <div
+                                        onClick={() => toggleUserStatus(user.id)}
                                         style={{
                                             width: '42px',
                                             height: '32px',
@@ -361,13 +286,8 @@ export default function UsersPage() {
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            background: active
-                                                ? (isGrid
-                                                    ? 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)'
-                                                    : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)')
-                                                : 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
-                                            boxShadow: active ? '0 8px 18px rgba(0,0,0,0.12)' : '0 2px 6px rgba(0,0,0,0.06)',
-                                            color: active ? '#fff' : '#475569'
+                                            cursor: 'pointer',
+                                            userSelect: 'none'
                                         }}
                                     >
                                         {isGrid ? (
@@ -568,19 +488,23 @@ export default function UsersPage() {
                                                 {user.isDeleted ? 'Deleted' : user.isActive ? 'Active' : 'Inactive'}
                                             </span>
                                         </div>
+                                    </div>
+                                </td>
+                                <td style={tdCenter}>
+                                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                                         <button
-                                            style={{ ...styles.button, padding: '6px 10px', fontSize: '12px' }}
-                                            onClick={() => alert(`Edit user: ${fullName}`)}
-                                            disabled={user.isDeleted}
+                                            style={{ ...styles.button, padding: '6px 12px', fontSize: '12px' }}
+                                            onClick={() => alert(`Edit user: ${user.name}`)}
+                                            title="Edit"
                                         >
-                                            ✏️ Edit
+                                            <Pencil size={16} color="#ffffff" />
                                         </button>
                                         <button
-                                            style={{ ...styles.buttonDanger, padding: '6px 10px', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+                                            style={{ ...styles.buttonDanger, padding: '6px 12px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                             onClick={() => handleDeleteUser(user.id)}
-                                            disabled={user.isDeleted}
+                                            title="Delete"
                                         >
-                                            🗑️ Delete
+                                            <Trash2 size={16} color="#ffffff" />
                                         </button>
                                     </div>
                                 </div>
