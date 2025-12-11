@@ -147,20 +147,27 @@ export default function Sidebar() {
                                 <span style={{ fontSize: '14px', fontWeight: '700', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
                                     {group.label}
                                 </span>
-                                {/* <span
+                                <span
+                                    aria-hidden="true"
                                     style={{
                                         fontSize: '10px',
                                         transition: 'transform 0.2s ease',
-                                        transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)',
                                         display: 'flex',
                                         alignItems: 'center',
                                         color: hasActiveItem ? accent : undefined,
                                         fontWeight: 700,
                                     }}
                                 >
-                                    {isOpen ? '▼' : '▶'}
-                                </span> */}
-                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>
+                                    {isOpen ? (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="m9 18 6-6-6-6" />  
+                                        </svg>
+                                    )}
+                                </span>
                            </div>
 
                             {/* Group Items */}
