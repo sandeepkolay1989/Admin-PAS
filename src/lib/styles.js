@@ -453,7 +453,7 @@ const lightTheme = {
     },
 
     navItemActive: {
-        background: '#0ea5e9',
+        background: '#f1f5f9',
         color: '#ffffff',
         fontWeight: '600',
         boxShadow: '0 4px 12px rgba(14, 165, 233, 0.2)',

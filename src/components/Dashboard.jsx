@@ -1,6 +1,16 @@
 'use client';
 import React from 'react';
 import { useTheme } from '../context/ThemeContext';
+import {
+    Users,
+    DollarSign,
+    TrendingUp,
+    CalendarDays,
+    Clock3,
+    Activity,
+    Trophy,
+    Star
+} from 'lucide-react';
 
 export default function Dashboard({ users = [], academies = [], sports = [], bookings = [] }) {
     const styles = useTheme();
@@ -33,7 +43,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
     });
 
     // Modern stat card component with theme support
-    const ModernStatCard = ({ icon, value, label, change, bgColor, badge }) => (
+    const ModernStatCard = ({ icon: Icon, value, label, change, bgColor, badge }) => (
         <div style={{
             ...styles.statCard,
             display: 'flex',
@@ -61,7 +71,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
                     fontSize: '20px',
                     color: '#0f172a',
                 }}>
-                    {icon}
+                    {Icon ? <Icon size={20} color="#0f172a" /> : null}
                 </div>
                 {change && (
                     <div style={{
@@ -135,7 +145,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
                 marginBottom: '24px'
             }}>
                 <ModernStatCard
-                    icon="👤"
+                    icon={Users}
                     value={users.length.toLocaleString()}
                     label="Total Users"
                     change="+12%"
@@ -143,35 +153,35 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
                     badge="Growth"
                 />
                 <ModernStatCard
-                    icon="₹"
+                    icon={DollarSign}
                     value={`₹${totalEarnings.toLocaleString('en-IN')}`}
                     label="Total Earnings"
                     change="+8%"
                     bgColor="#fff3e8"
                 />
                 <ModernStatCard
-                    icon="🕥"
+                    icon={Clock3}
                     value={bookings.length.toLocaleString()}
                     label="Bookings"
                     change="+15%"
                     bgColor="#fff7ed"
                 />
                 <ModernStatCard
-                    icon="🏟️"
+                    icon={Activity}
                     value={academies.length}
                     label="Active Academies"
                     change="+3%"
                     bgColor="#e0f2fe"
                 />
                 <ModernStatCard
-                    icon="🏀"
+                    icon={Trophy}
                     value={sports.length}
                     label="Sports"
                     change="+10%"
                     bgColor="#fef9c3"
                 />
                 <ModernStatCard
-                    icon="🌟"
+                    icon={Star}
                     value="4.8"
                     label="Reviews"
                     change="+0.2"

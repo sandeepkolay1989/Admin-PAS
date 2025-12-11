@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
+import { Pencil, Trash2, X, HelpCircle } from 'lucide-react';
 
 export default function AcademiesPage() {
     const { academies, setAcademies } = useAdmin();
@@ -12,7 +13,7 @@ export default function AcademiesPage() {
     const toggleStatus = (id) => {
         const target = academies.find(a => a.id === id);
         if (!target) return;
-        const nextStatus = target.status === 'active' ? 'inactive' : 'active';
+        const nextStatus = target.status === 'active' ? 'Inactive' : 'Active';
         setConfirmModal({
             id,
             nextStatus,
@@ -35,26 +36,43 @@ export default function AcademiesPage() {
         if (!confirmModal) return null;
         return (
             <div style={styles.modalOverlay}>
-                <div style={{ ...styles.modal, maxWidth: '420px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                        <h3 style={{ margin: 0, color: styles.title.color }}>Confirm Status</h3>
-                        <button
-                            onClick={handleCancelStatus}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                fontSize: '22px',
-                                cursor: 'pointer',
-                                color: styles.title.color,
-                                padding: 0
-                            }}
-                            aria-label="Close"
-                        >
-                            ×
-                        </button>
-                    </div>
-                    <p style={{ color: styles.subtitle.color, marginBottom: '20px' }}>{confirmModal.message}</p>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '52px' }}>
+                    <span style={{
+                        position: 'absolute',
+                        top: '10px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        display: 'block',
+                        width: '32px',
+                        height: '32px',
+                        pointerEvents: 'none',
+                        color: '#f97316'
+                    }}>
+                        <HelpCircle size={32} />
+                    </span>
+                    <button
+                        onClick={handleCancelStatus}
+                        style={{
+                            position: 'absolute',
+                            top: '16px',
+                            right: '16px',
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '0px',
+                            cursor: 'pointer',
+                            color: '#0f172a',
+                            padding: 0,
+                            lineHeight: 1
+                        }}
+                        aria-label="Close"
+                    >
+                        <X size={18} color="#0f172a" />
+                    </button>
+                    <h3 style={{ margin: '0 0 12px 0', color: '#de0404', fontWeight: 700 }}>Are You Sure?</h3>
+                    <p style={{ color: '#242222', marginBottom: '20px' }}>
+                        Do you want to change this status to <span style={{ color: '#f97316', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
+                    </p>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                         <button
                             onClick={handleCancelStatus}
                             style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
@@ -74,7 +92,7 @@ export default function AcademiesPage() {
                                 cursor: 'pointer'
                             }}
                         >
-                            Confirm
+                            Yes, Do It.
                         </button>
                     </div>
                 </div>
@@ -94,6 +112,9 @@ export default function AcademiesPage() {
         academy.email.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const thCenter = { ...styles.th, textAlign: 'center' };
+    const tdCenter = { ...styles.td, textAlign: 'center', verticalAlign: 'middle' };
+
     return (
         <div style={styles.mainContent}>
             {renderConfirmModal()}
@@ -112,50 +133,83 @@ export default function AcademiesPage() {
                 <table style={styles.table}>
                     <thead>
                         <tr>
-                            <th style={styles.th}>Sr. No.</th>
-                            <th style={styles.th}>Name</th>
-                            <th style={styles.th}>Email Id</th>
-                            <th style={styles.th}>Academy Name</th>
-                            <th style={styles.th}>Mobile Number</th>
-                            <th style={styles.th}>Added By</th>
-                            <th style={styles.th}>Create Date</th>
-                            <th style={styles.th}>Status</th>
-                            <th style={styles.th}>Action</th>
+                            <th style={thCenter}>Sr. No.</th>
+                            <th style={thCenter}>Name</th>
+                            <th style={thCenter}>Email Id</th>
+                            <th style={thCenter}>Academy Name</th>
+                            <th style={thCenter}>Mobile Number</th>
+                            <th style={thCenter}>Added By</th>
+                            <th style={thCenter}>Create Date</th>
+                            <th style={thCenter}>Status</th>
+                            <th style={thCenter}>Action</th>
                         </tr>
                     </thead>
                     <tbody>
                         {filteredAcademies.map((academy, index) => (
                             <tr key={academy.id}>
-                                <td style={styles.td}>{index + 1}</td>
-                                <td style={styles.td}>
-                                    <div style={{ fontWeight: '500' }}>{academy.ownerName || 'N/A'}</div>
+                                <td style={tdCenter}>{index + 1}</td>
+                                <td style={{ ...tdCenter, fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                    {academy.ownerName || 'N/A'}
                                 </td>
-                                <td style={styles.td}>{academy.email}</td>
-                                <td style={styles.td}>{academy.name}</td>
-                                <td style={styles.td}>{academy.contact || '-'}</td>
-                                <td style={styles.td}>{academy.addedBy || '-'}</td>
-                                <td style={styles.td}>{academy.createDate || '-'}</td>
-                                <td style={styles.td}>
-                                    <button
+                                <td style={tdCenter}>{academy.email}</td>
+                                <td style={tdCenter}>{academy.name}</td>
+                                <td style={tdCenter}>{academy.contact || '-'}</td>
+                                <td style={tdCenter}>{academy.addedBy || '-'}</td>
+                                <td style={tdCenter}>{academy.createDate || '-'}</td>
+                                <td style={tdCenter}>
+                                    <div
                                         onClick={() => toggleStatus(academy.id)}
-                                        style={academy.status === 'active' ? styles.badgeActive : styles.badgeInactive}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            cursor: 'pointer',
+                                            userSelect: 'none'
+                                        }}
+                                        title={`Click to ${academy.status === 'active' ? 'Deactivate' : 'Activate'} academy`}
                                     >
-                                        {academy.status === 'active' ? 'Active' : 'Inactive'}
-                                    </button>
-                                </td>
-                                <td style={styles.td}>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button
-                                            style={{ ...styles.button, padding: '5px 10px', fontSize: '12px' }}
-                                            onClick={() => alert(`Edit academy: ${academy.name}`)}
+                                        <div
+                                            style={{
+                                                width: '50px',
+                                                height: '20px',
+                                                borderRadius: '999px',
+                                                background: academy.status === 'active' ? '#023B84' : '#e5e7eb',
+                                                position: 'relative',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+                                            }}
                                         >
-                                            ✏️ Edit
+                                            <div
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '3px',
+                                                    left: academy.status === 'active' ? '36px' : '3px',
+                                                    width: '10px',
+                                                    height: '12px',
+                                                    borderRadius: '999px',
+                                                    background: '#ffffff',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                                    transition: 'left 0.2s ease'
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style={tdCenter}>
+                                    <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                        <button
+                                            style={{ ...styles.button, padding: '6px 12px', fontSize: '12px' }}
+                                            onClick={() => alert(`Edit academy: ${academy.name}`)}
+                                            title="Edit"
+                                        >
+                                            <Pencil size={16} color="#ffffff" />
                                         </button>
                                         <button
-                                            style={{ ...styles.buttonDanger, padding: '5px 10px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                            style={{ ...styles.buttonDanger, padding: '6px 12px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                             onClick={() => handleDelete(academy.id)}
+                                            title="Delete"
                                         >
-                                            🗑️ Delete
+                                            <Trash2 size={16} color="#ffffff" />
                                         </button>
                                     </div>
                                 </td>
