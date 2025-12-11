@@ -27,11 +27,11 @@ export default function UsersPage() {
     const toggleUserStatus = (id) => {
         const target = users.find(user => user.id === id);
         if (!target) return;
-        const nextStatus = target.status === 'active' ? 'inactive' : 'active';
+        const nextStatus = target.status === 'active' ? 'Inactive' : 'Active';
         setConfirmModal({
             id,
             nextStatus,
-            message: `Change user status to "${nextStatus}"? Please confirm to complete the change.`
+            message: `Do you want to change this status to "${nextStatus}"? `
         });
     };
 
@@ -126,26 +126,31 @@ export default function UsersPage() {
         <div style={styles.mainContent}>
             {confirmModal && (
                 <div style={styles.modalOverlay}>
-                    <div style={{ ...styles.modal, maxWidth: '420px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                            <h3 style={{ margin: 0, color: styles.title.color }}>Confirm Status</h3>
-                            <button
-                                onClick={handleCancelStatus}
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    fontSize: '22px',
-                                    cursor: 'pointer',
-                                    color: styles.title.color,
-                                    padding: 0
-                                }}
-                                aria-label="Close"
-                            >
-                                ×
-                            </button>
-                        </div>
-                        <p style={{ color: styles.subtitle.color, marginBottom: '20px' }}>{confirmModal.message}</p>
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '28px' }}>
+                        <span style={{ position: 'absolute', top: '8px', left: '50%', transform: 'translateX(-50%)', fontSize: '16px', fontWeight: 700, color: '#f97316' }}></span>
+                        <button
+                            onClick={handleCancelStatus}
+                            style={{
+                                position: 'absolute',
+                                top: '8px',
+                                right: '8px',
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '20px',
+                                cursor: 'pointer',
+                                color: '#0f172a',
+                                padding: 0,
+                                lineHeight: 1
+                            }}
+                            aria-label="Close"
+                        >
+                            <img src="/cross-icon.svg" alt="close" width={14} height={14} />
+                        </button>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#f97316', fontWeight: 700 }}>Are You Sure?</h3>
+                        <p style={{ color: '#242222', marginBottom: '20px' }}>
+                            Do you want to change this status to <span style={{ color: '#fa0602', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button
                                 onClick={handleCancelStatus}
                                 style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
@@ -165,7 +170,7 @@ export default function UsersPage() {
                                     cursor: 'pointer'
                                 }}
                             >
-                                Confirm
+                                Yes, Do It.
                             </button>
                         </div>
                     </div>
@@ -239,47 +244,60 @@ export default function UsersPage() {
                             <tr key={user.id}>
                                 <td style={styles.td}>{index + 1}</td>
                                 <td style={{ ...styles.td, fontWeight: '500' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={styles.avatar}>{user.name.charAt(0)}</div>
-                                        {user.name}
-                                    </div>
+                                    {user.name}
                                 </td>
                                 <td style={styles.td}>{user.email}</td>
                                 <td style={styles.td}>{user.mobile || '-'}</td>
                                 <td style={styles.td}>
-                                    {user.participants && user.participants.length > 0
-                                        ? user.participants.join(', ')
-                                        : 'No participants'}
+                                    {Array.isArray(user.participants) ? user.participants.length : 0}
                                 </td>
                                 <td style={styles.td}>{user.source || 'Unknown'}</td>
                                 <td style={styles.td}>
-                                    <button
+                                    <div
                                         onClick={() => toggleUserStatus(user.id)}
                                         style={{
-                                            ...(user.status === 'active' ? styles.badgeActive : styles.badgeInactive),
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            e.target.style.transform = 'scale(1.05)';
-                                            e.target.style.opacity = '0.9';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            e.target.style.transform = 'scale(1)';
-                                            e.target.style.opacity = '1';
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '8px',
+                                            cursor: 'pointer',
+                                            userSelect: 'none'
                                         }}
                                         title={`Click to ${user.status === 'active' ? 'deactivate' : 'activate'} user`}
                                     >
-                                        <span
+                                        <div
                                             style={{
-                                                display: 'inline-block',
-                                                width: '8px',
-                                                height: '8px',
-                                                borderRadius: '50%',
-                                                backgroundColor: 'currentColor',
-                                                marginRight: '6px',
+                                                width: '50px',
+                                                height: '20px',
+                                                borderRadius: '999px',
+                                                background: user.status === 'active' ? '#023B84' : '#c7d5f0',
+                                                position: 'relative',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
                                             }}
-                                        />
-                                        {user.status === 'active' ? 'Active' : 'Inactive'}
-                                    </button>
+                                        >
+                                            <div
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: '3px',
+                                                    left: user.status === 'active' ? '36px' : '3px',
+                                                    width: '10px',
+                                                    height: '12px',
+                                                    borderRadius: '999px',
+                                                    background: '#ffffff',
+                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                                    transition: 'left 0.2s ease'
+                                                }}
+                                            />
+                                        </div>
+                                        <span style={{
+                                            color: user.status === 'active' ? '#023B84' : '#64748b',
+                                            fontWeight: 700,
+                                            fontSize: '12px',
+                                            minWidth: '52px'
+                                        }}>
+                                            {user.status === 'active' ? 'Active' : 'Inactive'}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td style={styles.td}>
                                     <div style={{ display: 'flex', gap: '10px' }}>
