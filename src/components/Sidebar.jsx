@@ -78,18 +78,23 @@ export default function Sidebar() {
         return openGroups[groupId] !== undefined ? openGroups[groupId] : hasActiveItem;
     };
 
+    const [hoveredGroup, setHoveredGroup] = useState(null);
+    const [activeGroup, setActiveGroup] = useState(null);
+
     const itemBaseStyle = {
         fontSize: '14px',
-        padding: '12px 14px',
+        padding: '8px 12px',
         borderRadius: '12px',
         display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        color:'rgb(71, 85, 105)',
+        alignItems: 'left',
+        gap: '4px',
+        color: '#021633',
         fontWeight: 500,
         transition: 'all 0.2s ease',
-        marginLeft: '8px',
+        marginLeft: '4px',
         position: 'relative',
+        background: 'transparent',
+        border: '1px solid rgba(0, 0, 0, 0.08)',
     };
 
     return (
@@ -123,28 +128,45 @@ export default function Sidebar() {
             <nav style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
                 {menuGroups.map(group => {
                     const isOpen = isGroupOpen(group.id);
-                    const hasActiveItem = group.items.some(item => isItemActive(item.path));
+                    const hasActiveItem = group.items.some(item => isItemActive(item.path)) || activeGroup === group.id;
 
                     return (
-                        <div key={group.id} style={{ marginBottom: '24px' }}>
+                        <div key={group.id} style={{ marginBottom: '0' }}>
                             {/* Group Header */}
                             <div
                                 style={{
                                     ...(styles.menuGroupHeader || {}),
-                                    color: hasActiveItem ? accent : ((styles.menuGroupHeader && styles.menuGroupHeader.color) || (isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#64748b')),
+                                    color: (hasActiveItem || (hoveredGroup === group.id && !hasActiveItem)) ? '#ffffff' : ((styles.menuGroupHeader && styles.menuGroupHeader.color) || (isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#64748b')),
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'space-between',
                                     cursor: 'pointer',
-                                    gap: '8px',
-                                    padding: '12px 14px',
-                                    borderRadius: '14px',
-                                    background: isOpen ? accentSoft : 'transparent',
-                                    boxShadow: isOpen ? '0 8px 24px rgba(249, 115, 22, 0.12)' : 'none',
+                                    fontSize: '16px',
+                                    fontWeight: '700',
+                                    gap: '2px',
+                                    padding: '8px 12px',
+                                    borderRadius: '10px',
+                                    background: hasActiveItem
+                                        ? 'linear-gradient(90deg, #f97316 0%,rgb(245, 180, 112) 100%)'
+                                        : (hoveredGroup === group.id
+                                            ? 'linear-gradient(90deg, rgb(249, 115, 22) 0%, rgb(245, 180, 112) 100%)'
+                                            : (isOpen ? accentSoft : 'transparent')),
+                                    boxShadow: hasActiveItem
+                                        ? '0 8px 18px rgba(249, 115, 22, 0.3)'
+                                        : (hoveredGroup === group.id
+                                            ? '0 4px 12px rgba(234, 177, 121, 0.35)'
+                                            : (isOpen ? '0 8px 12px rgb(206, 169, 132)' : 'none')),
+                                    border: hoveredGroup === group.id && !hasActiveItem
+                                        ? '1px solid rgba(234, 177, 121, 0.5)'
+                                        : '1px solid rgba(34, 30, 30, 0.08)',
+                                    transform: hoveredGroup === group.id && !hasActiveItem ? 'translateX(4px)' : 'none',
                                 }}
                                 onClick={() => toggleGroup(group.id)}
+                                onDoubleClick={() => setActiveGroup(group.id)}
+                                onMouseEnter={() => setHoveredGroup(group.id)}
+                                onMouseLeave={() => setHoveredGroup(null)}
                             >
-                                <span style={{ fontSize: '14px', fontWeight: '700', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
+                                <span style={{ fontSize: '14px', fontWeight: '500', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
                                     {group.label}
                                 </span>
                                 <span
@@ -154,7 +176,7 @@ export default function Sidebar() {
                                         transition: 'transform 0.2s ease',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        color: hasActiveItem ? accent : undefined,
+                                        color: (hasActiveItem || (hoveredGroup === group.id && !hasActiveItem)) ? '#ffffff' : undefined,
                                         fontWeight: 700,
                                     }}
                                 >
@@ -172,7 +194,7 @@ export default function Sidebar() {
 
                             {/* Group Items */}
                             {isOpen && (
-                                <div style={{ marginTop: '8px', paddingLeft: '0' }}>
+                                <div style={{ marginTop: '4px', paddingLeft: '0' }}>
                                     {group.items.map(item => {
                                         const isActive = isItemActive(item.path);
 
@@ -186,14 +208,18 @@ export default function Sidebar() {
                                                     style={{
                                                         ...itemBaseStyle,
                                                         ...(hoveredItem === item.id && !isActive ? {
-                                                            background: '#f8fafc',
-                                                            color: '#0f172a'
+                                                            background: 'linear-gradient(90deg, rgb(249, 115, 22) 0%, rgb(245, 180, 112) 100%)',
+                                                            color: '#ffffff',
+                                                            transform: 'translateX(4px)',
+                                                            border: '1px solid rgba(234, 177, 121, 0.5)',
+                                                            boxShadow: '0 4px 12px rgba(234, 177, 121, 0.35)',
                                                         } : {}),
                                                         ...(isActive ? {
-                                                            background: 'linear-gradient(90deg, #ffe7d6 0%, #fff 100%)',
-                                                            color: '#ea580c',
-                                                            boxShadow: '0 8px 20px rgba(249, 115, 22, 0.18)',
-                                                            border: '1px solid #fed7aa'
+                                                            background: 'linear-gradient(90deg, rgba(249, 116, 22, 0.76) 0%, rgb(245, 180, 112) 0%, 100%)',
+                                                            color: '#ffffff',
+                                                            boxShadow: '0 4px 16px rgba(249, 115, 22, 0.25)',
+                                                            border: '1px solid rgba(249, 115, 22, 0.3)',
+                                                            fontWeight: 600,
                                                         } : {}),
                                                     }}
                                                     onMouseEnter={() => setHoveredItem(item.id)}
@@ -203,11 +229,11 @@ export default function Sidebar() {
                                                         width: '4px',
                                                         height: '20px',
                                                         borderRadius: '6px',
-                                                        background: isActive ? '#ea580c' : 'transparent',
+                                                        background: isActive ? '#ffffff' : (hoveredItem === item.id ? '#ffffff' : 'transparent'),
                                                         transition: 'background 0.2s ease'
                                                     }} />
-                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: isActive ? '#ea580c' : '#94a3b8' }}>{item.icon}</span>
-                                                    <span style={{ color: isActive ? '#ea580c' : '#334155' }}>{item.label}</span>
+                                                    <span style={{ fontSize: '16px', width: '20px', display: 'flex', justifyContent: 'center', color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#64748b' }}>{item.icon}</span>
+                                                    <span style={{ color: (isActive || (hoveredItem === item.id && !isActive)) ? '#ffffff' : '#475569' }}>{item.label}</span>
                                                 </div>
                                             </Link>
                                         );
