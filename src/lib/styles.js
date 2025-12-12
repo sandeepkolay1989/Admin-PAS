@@ -1,3 +1,5 @@
+const navFontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
+
 const darkTheme = {
     name: 'dark',
     // Layout
@@ -5,6 +7,7 @@ const darkTheme = {
         display: 'flex',
         minHeight: '100vh',
         backgroundColor: '#f8fafc',
+        fontFamily: navFontFamily,
     },
 
     sidebar: {
@@ -18,6 +21,7 @@ const darkTheme = {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        fontFamily: navFontFamily,
     },
 
     logo: {
@@ -90,6 +94,7 @@ const darkTheme = {
         paddingTop: '80px',    
         overflowY: 'auto',
         position: 'relative',
+        fontFamily: navFontFamily,
     },
 
     // Cards
@@ -114,6 +119,7 @@ const darkTheme = {
         color: '#0f172a',
         marginBottom: '6px',
         letterSpacing: '-0.02em',
+        fontFamily: navFontFamily,
     },
 
     subtitle: {
@@ -162,6 +168,7 @@ const darkTheme = {
         fontWeight: '600',
         transition: 'all 0.2s ease',
         boxShadow: '0 2px 4px rgba(30, 64, 175, 0.2)',
+        fontFamily: navFontFamily,
     },
 
     buttonDanger: {
@@ -188,6 +195,7 @@ const darkTheme = {
         color: '#0f172a',
         transition: 'all 0.2s ease',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        fontFamily: navFontFamily,
     },
 
     select: {
@@ -202,6 +210,7 @@ const darkTheme = {
         cursor: 'pointer',
         transition: 'all 0.2s ease',
         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+        fontFamily: navFontFamily,
     },
 
     // Table
@@ -220,6 +229,7 @@ const darkTheme = {
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
         backgroundColor: '#f8fafc',
+        fontFamily: navFontFamily,
     },
 
     td: {
@@ -227,6 +237,7 @@ const darkTheme = {
         borderBottom: '1px solid #f1f5f9',
         color: '#0f172a',
         fontSize: '14px',
+        fontFamily: navFontFamily,
     },
 
     // Badges
@@ -381,6 +392,7 @@ const lightTheme = {
         display: 'flex',
         minHeight: '100vh',
         backgroundColor: '#f8fafc', // Very light gray for background
+        fontFamily: navFontFamily,
     },
 
     sidebar: {
@@ -392,6 +404,7 @@ const lightTheme = {
         borderRight: '1px solid #e2e8f0',
         display: 'flex',
         flexDirection: 'column',
+        fontFamily: navFontFamily,
     },
 
     logo: {
@@ -466,6 +479,7 @@ const lightTheme = {
         padding: '20px',
         paddingTop: '60px',
         overflowY: 'auto',
+        fontFamily: navFontFamily,
     },
 
     // Cards
@@ -488,6 +502,7 @@ const lightTheme = {
         fontWeight: 'bold',
         color: '#0f172a',
         marginBottom: '6px',
+        fontFamily: navFontFamily,
     },
 
     subtitle: {
@@ -563,6 +578,7 @@ const lightTheme = {
         backgroundColor: '#ffffff',
         color: '#0f172a',
         transition: 'all 0.3s ease',
+        fontFamily: navFontFamily,
     },
 
     select: {
@@ -576,6 +592,7 @@ const lightTheme = {
         color: '#0f172a',
         cursor: 'pointer',
         transition: 'all 0.3s ease',
+        fontFamily: navFontFamily,
     },
 
     // Table
@@ -592,11 +609,13 @@ const lightTheme = {
         color: '#475569',
         fontSize: '14px',
         backgroundColor: '#f8fafc',
+        fontFamily: navFontFamily,
     },
 
     td: {
         padding: '12px',
         borderBottom: '1px solid #f1f5f9',
+        fontFamily: navFontFamily,
         color: '#334155',
         fontSize: '14px',
     },

@@ -76,8 +76,10 @@ export default function AcademiesPage() {
     const handleConfirmStatus = () => {
         if (!confirmModal) return;
         const { id, nextStatus } = confirmModal;
+        // Convert to lowercase to match the status checks throughout the component
+        const targetStatus = (nextStatus || '').toLowerCase() === 'active' ? 'active' : 'inactive';
         setAcademies(academies.map(academy =>
-            academy.id === id ? { ...academy, status: nextStatus } : academy
+            academy.id === id ? { ...academy, status: targetStatus } : academy
         ));
         setConfirmModal(null);
     };
@@ -310,7 +312,15 @@ export default function AcademiesPage() {
             state: academy.state || '',
             city: academy.city || '',
             pincode: academy.pincode || '',
-            selectedSports: academy.selectedSports || (academy.sport ? [academy.sport] : []),
+            selectedSports: academy.selectedSports || (academy.sport 
+                ? (typeof academy.sport === 'string' 
+                    ? academy.sport.split(',').map(s => {
+                        const trimmed = s.trim();
+                        // Convert to number if it's numeric, otherwise keep as string
+                        return /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : trimmed;
+                    }).filter(s => s !== '' && s !== null && s !== undefined)
+                    : Array.isArray(academy.sport) ? academy.sport : [academy.sport])
+                : []),
             media: academy.media || [],
             callTimeFrom: academy.callTimeFrom || '',
             callTimeTo: academy.callTimeTo || '',
