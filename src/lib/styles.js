@@ -53,7 +53,7 @@ const darkTheme = {
         letterSpacing: '0.5px',
         transition: 'all 0.2s ease',
         borderRadius: '6px',
-        background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.1) 0%, rgba(30, 58, 138, 0.05) 100%)',
+        background: 'linear-gradient(135deg, rgba(2, 59, 132, 0.12) 0%, rgba(2, 59, 132, 0.06) 100%)',
         boxShadow: 'inset 0 1px 2px rgba(0, 0, 0, 0.1)',
     },
 
@@ -71,22 +71,23 @@ const darkTheme = {
     },
 
     navItemHover: {
-        background: 'linear-gradient(135deg, rgba(30, 64, 175, 0.15) 0%, rgba(30, 58, 138, 0.1) 100%)',
+        background: 'linear-gradient(135deg, rgba(2, 59, 132, 0.16) 0%, rgba(2, 59, 132, 0.1) 100%)',
         color: '#ffffff',
-        boxShadow: '0 2px 8px rgba(30, 64, 175, 0.2)',
+        boxShadow: '0 2px 8px rgba(2, 59, 132, 0.2)',
     },
 
     navItemActive: {
-        background: 'linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%)',
+        background: 'linear-gradient(135deg, #023B84 0%, #023B84 100%)',
         color: '#ffffff',
         fontWeight: '600',
-        boxShadow: '0 4px 12px rgba(30, 64, 175, 0.4), 0 2px 4px rgba(30, 64, 175, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+        boxShadow: '0 4px 12px rgba(2, 59, 132, 0.4), 0 2px 4px rgba(2, 59, 132, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
     },
 
     mainContent: {
         flex: 1,
-        backgroundColor: '#f8fafc',
+        background: 'linear-gradient(180deg, rgba(2, 59, 132, 0.08) 0px, rgba(2, 59, 132, 0) 140px), #f8fafc',
         padding: '20px',
+        paddingTop: '80px',    
         overflowY: 'auto',
         position: 'relative',
     },
@@ -461,8 +462,9 @@ const lightTheme = {
 
     mainContent: {
         flex: 1,
-        background: '#f8fafc',
+        background: 'linear-gradient(180deg, rgba(2, 59, 132, 0.06) 0px, rgba(2, 59, 132, 0) 140px), #f8fafc',
         padding: '20px',
+        paddingTop: '60px',
         overflowY: 'auto',
     },
 
@@ -525,7 +527,7 @@ const lightTheme = {
     // Buttons
     button: {
         padding: '10px 20px',
-        backgroundColor: '#0ea5e9',
+        backgroundColor: '#023B84',
         color: '#ffffff',
         border: 'none',
         borderRadius: '8px',
@@ -537,17 +539,17 @@ const lightTheme = {
     },
 
     buttonDanger: {
-        backgroundColor: '#ef4823',
+        backgroundColor: 'rgb(249, 115, 22)',
         color: '#ffffff',
         fontWeight: '700',
-        boxShadow: '0 4px 12px rgba(239, 72, 35, 0)',
+        boxShadow: '0 4px 12px rgba(249, 115, 22, 0)',
     },
 
     buttonSuccess: {
         backgroundColor: '#023B84',
         color: '#ffffff',
         fontWeight: '700',
-        boxShadow: '0 4px 12px rgba(2, 58, 132, 0)',    
+        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.25)',
     },
 
     // Forms

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
+import { CalendarRange, Eye, DownloadCloud } from 'lucide-react';
 
 export default function BookingsPage() {
     const { bookings, setBookings, batches } = useAdmin();
@@ -119,7 +120,7 @@ export default function BookingsPage() {
                     </select>
 
                     <button style={{ ...styles.button, backgroundColor: 'white', color: '#64748b', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        📅 Pick a date range
+                        <CalendarRange size={16} /> Pick a date range
                     </button>
                 </div>
             </div>
@@ -128,7 +129,7 @@ export default function BookingsPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1e293b' }}>All Bookings</h2>
                 <button style={{ ...styles.button, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    📥 Export
+                    <DownloadCloud size={16} /> Export
                 </button>
             </div>
 
@@ -168,8 +169,8 @@ export default function BookingsPage() {
                                 <td style={styles.td}>{booking.date}</td>
                                 <td style={styles.td}>
                                     <div style={{ display: 'flex', gap: '10px', color: '#64748b', fontSize: '16px' }}>
-                                        <span style={{ cursor: 'pointer' }}>👁️</span>
-                                        <span style={{ cursor: 'pointer' }}>📥</span>
+                                        <span style={{ cursor: 'pointer' }}><Eye size={16} /></span>
+                                        <span style={{ cursor: 'pointer' }}><DownloadCloud size={16} /></span>
                                     </div>
                                 </td>
                             </tr>
