@@ -1,25 +1,34 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
-import { Pencil, Trash2, X, HelpCircle, Search, Upload } from 'lucide-react';
+import { Pencil, Trash2, X, HelpCircle, Search, Upload, MapPin, Navigation, FileText, Image as ImageIcon, Video, Building2, CheckCircle2, DownloadCloud } from 'lucide-react';
 
 export default function AcademiesPage() {
     const { academies, setAcademies, sports } = useAdmin();
     const styles = useTheme();
     const navFontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all'); // all, active, inactive
+    const [addedByFilter, setAddedByFilter] = useState('all'); // all, or specific addedBy value
+    const [sportsFilter, setSportsFilter] = useState('all'); // all, or specific sport ID
     const [confirmModal, setConfirmModal] = useState(null);
     const [viewMode, setViewMode] = useState('list');
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [showAcademyModal, setShowAcademyModal] = useState(false);
+    const formJustOpenedRef = useRef(false);
+    const [fieldErrors, setFieldErrors] = useState({});
     const [editingAcademy, setEditingAcademy] = useState(null);
     const [activeTab, setActiveTab] = useState('basic');
     const [academyForm, setAcademyForm] = useState({
         centerName: '',
         phoneNumber: '',
         email: '',
+        experience: '',
+        allowedGenders: [],
+        allowDisability: false,
+        onlyForDisabled: false,
         rules: [],
         newRule: '',
         logo: null,
@@ -33,8 +42,15 @@ export default function AcademiesPage() {
         state: '',
         city: '',
         pincode: '',
+        searchLocation: '',
+        houseNumber: '',
+        streetName: '',
+        latitude: '',
+        longitude: '',
         selectedSports: [],
         media: [],
+        mediaBySport: {}, // { [sportId]: { description: '', images: [], videos: [] } }
+        documents: [],
         callTimeFrom: '',
         callTimeTo: '',
         timings: [],
@@ -52,6 +68,70 @@ export default function AcademiesPage() {
         status: 'active'
     });
     const [ifscError, setIfscError] = useState('');
+    const [sportSearchTerm, setSportSearchTerm] = useState('');
+    const [currentUploadContext, setCurrentUploadContext] = useState({ sportId: null, type: null });
+    const [mapLoaded, setMapLoaded] = useState(false);
+    const [map, setMap] = useState(null);
+    const [marker, setMarker] = useState(null);
+    const [geocoder, setGeocoder] = useState(null);
+    const mapRef = useRef(null);
+    const mapContainerRef = useRef(null);
+    const mapsScriptLoadedRef = useRef(false);
+    const imagesInputRef = useRef(null);
+    const videosInputRef = useRef(null);
+    const documentsInputRef = useRef(null);
+
+    // Indian States and Cities data
+    const indianStates = [
+        'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
+        'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand',
+        'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur',
+        'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab',
+        'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura',
+        'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands',
+        'Chandigarh', 'Dadra and Nagar Haveli', 'Daman and Diu', 'Delhi',
+        'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+    ];
+
+    const indianCities = {
+        'Andhra Pradesh': ['Hyderabad', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Nellore'],
+        'Arunachal Pradesh': ['Itanagar', 'Naharlagun', 'Pasighat', 'Tawang', 'Ziro'],
+        'Assam': ['Guwahati', 'Silchar', 'Dibrugarh', 'Jorhat', 'Nagaon'],
+        'Bihar': ['Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Purnia'],
+        'Chhattisgarh': ['Raipur', 'Bhilai', 'Bilaspur', 'Durg', 'Korba'],
+        'Goa': ['Panaji', 'Margao', 'Vasco da Gama', 'Mapusa', 'Ponda'],
+        'Gujarat': ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar'],
+        'Haryana': ['Gurgaon', 'Faridabad', 'Panipat', 'Ambala', 'Karnal'],
+        'Himachal Pradesh': ['Shimla', 'Mandi', 'Solan', 'Dharamshala', 'Kullu'],
+        'Jharkhand': ['Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh'],
+        'Karnataka': ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum'],
+        'Kerala': ['Kochi', 'Thiruvananthapuram', 'Kozhikode', 'Thrissur', 'Kollam'],
+        'Madhya Pradesh': ['Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain'],
+        'Maharashtra': ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'],
+        'Manipur': ['Imphal', 'Thoubal', 'Bishnupur', 'Churachandpur', 'Ukhrul'],
+        'Meghalaya': ['Shillong', 'Tura', 'Jowai', 'Nongpoh', 'Williamnagar'],
+        'Mizoram': ['Aizawl', 'Lunglei', 'Saiha', 'Champhai', 'Kolasib'],
+        'Nagaland': ['Kohima', 'Dimapur', 'Mokokchung', 'Tuensang', 'Wokha'],
+        'Odisha': ['Bhubaneswar', 'Cuttack', 'Rourkela', 'Berhampur', 'Sambalpur'],
+        'Punjab': ['Ludhiana', 'Amritsar', 'Jalandhar', 'Patiala', 'Bathinda'],
+        'Rajasthan': ['Jaipur', 'Jodhpur', 'Kota', 'Bikaner', 'Ajmer'],
+        'Sikkim': ['Gangtok', 'Namchi', 'Mangan', 'Gyalshing', 'Singtam'],
+        'Tamil Nadu': ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem'],
+        'Telangana': ['Hyderabad', 'Warangal', 'Nizamabad', 'Karimnagar', 'Khammam'],
+        'Tripura': ['Agartala', 'Udaipur', 'Dharmanagar', 'Kailasahar', 'Belonia'],
+        'Uttar Pradesh': ['Lucknow', 'Kanpur', 'Agra', 'Varanasi', 'Allahabad'],
+        'Uttarakhand': ['Dehradun', 'Haridwar', 'Roorkee', 'Haldwani', 'Rishikesh'],
+        'West Bengal': ['Kolkata', 'Howrah', 'Durgapur', 'Asansol', 'Siliguri'],
+        'Andaman and Nicobar Islands': ['Port Blair', 'Diglipur', 'Mayabunder', 'Rangat', 'Car Nicobar'],
+        'Chandigarh': ['Chandigarh'],
+        'Dadra and Nagar Haveli': ['Silvassa', 'Dadra', 'Naroli', 'Khanvel', 'Kadaiya'],
+        'Daman and Diu': ['Daman', 'Diu'],
+        'Delhi': ['New Delhi', 'Delhi'],
+        'Jammu and Kashmir': ['Srinagar', 'Jammu', 'Anantnag', 'Baramulla', 'Sopore'],
+        'Ladakh': ['Leh', 'Kargil', 'Drass', 'Nubra', 'Zanskar'],
+        'Lakshadweep': ['Kavaratti', 'Agatti', 'Amini', 'Andrott', 'Kadmat'],
+        'Puducherry': ['Puducherry', 'Karaikal', 'Mahe', 'Yanam']
+    };
 
     const tabs = [
         { id: 'basic', label: 'Basic' },
@@ -61,6 +141,33 @@ export default function AcademiesPage() {
         { id: 'timings', label: 'Timings' },
         { id: 'banking', label: 'Banking' }
     ];
+
+    // Initialize media for selected sports
+    useEffect(() => {
+        if (academyForm.selectedSports.length === 0) return;
+        
+        setAcademyForm(prev => {
+            const newMediaBySport = { ...prev.mediaBySport };
+            let hasChanges = false;
+            prev.selectedSports.forEach(sportId => {
+                if (!newMediaBySport[sportId]) {
+                    newMediaBySport[sportId] = {
+                        description: '',
+                        images: [],
+                        videos: []
+                    };
+                    hasChanges = true;
+                }
+            });
+            if (hasChanges) {
+                return {
+                    ...prev,
+                    mediaBySport: newMediaBySport
+                };
+            }
+            return prev;
+        });
+    }, [academyForm.selectedSports.join(',')]);
 
     const toggleStatus = (id) => {
         const target = academies.find(a => a.id === id);
@@ -181,6 +288,247 @@ export default function AcademiesPage() {
         }
     };
 
+    // Load Google Maps script
+    useEffect(() => {
+        // Prevent multiple script loads
+        if (mapsScriptLoadedRef.current) {
+            return;
+        }
+
+        // Check if Google Maps is already loaded
+        if (window.google && window.google.maps) {
+            mapsScriptLoadedRef.current = true;
+            setMapLoaded(true);
+            setGeocoder(new window.google.maps.Geocoder());
+            return;
+        }
+
+        // Check if script is already in the DOM
+        const existingScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"]');
+        if (existingScript) {
+            mapsScriptLoadedRef.current = true;
+            // Script is already in the DOM, wait for it to load
+            const checkGoogleMaps = () => {
+                if (window.google && window.google.maps) {
+                    setMapLoaded(true);
+                    setGeocoder(new window.google.maps.Geocoder());
+                } else {
+                    // Wait a bit and check again
+                    setTimeout(checkGoogleMaps, 100);
+                }
+            };
+            checkGoogleMaps();
+            return;
+        }
+
+        // Mark as loading to prevent duplicate loads
+        mapsScriptLoadedRef.current = true;
+
+        // Create and load the script
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || 'YOUR_API_KEY'}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            setMapLoaded(true);
+            if (window.google && window.google.maps) {
+                setGeocoder(new window.google.maps.Geocoder());
+            }
+        };
+        script.onerror = () => {
+            // Reset on error so it can retry
+            mapsScriptLoadedRef.current = false;
+        };
+        document.head.appendChild(script);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Initialize map when Location tab is active and map is loaded
+    useEffect(() => {
+        if (activeTab === 'location' && mapLoaded && mapContainerRef.current && !map && window.google && window.google.maps && geocoder) {
+            const defaultCenter = academyForm.latitude && academyForm.longitude
+                ? { lat: parseFloat(academyForm.latitude), lng: parseFloat(academyForm.longitude) }
+                : { lat: 20.5937, lng: 78.9629 }; // Default to India center
+
+            const newMap = new window.google.maps.Map(mapContainerRef.current, {
+                center: defaultCenter,
+                zoom: 10,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true
+            });
+
+            const newMarker = new window.google.maps.Marker({
+                position: defaultCenter,
+                map: newMap,
+                draggable: true,
+                title: 'Academy Location'
+            });
+
+            // Update form when marker is dragged
+            newMarker.addListener('dragend', () => {
+                const position = newMarker.getPosition();
+                const lat = position.lat();
+                const lng = position.lng();
+                setAcademyForm(prev => ({
+                    ...prev,
+                    latitude: lat.toString(),
+                    longitude: lng.toString()
+                }));
+                // Reverse geocode to get address
+                if (geocoder) {
+                    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            updateAddressFromGeocode(results[0]);
+                        }
+                    });
+                }
+            });
+
+            // Update form when map is clicked
+            newMap.addListener('click', (e) => {
+                const lat = e.latLng.lat();
+                const lng = e.latLng.lng();
+                newMarker.setPosition({ lat, lng });
+                setAcademyForm(prev => ({
+                    ...prev,
+                    latitude: lat.toString(),
+                    longitude: lng.toString()
+                }));
+                // Reverse geocode to get address
+                if (geocoder) {
+                    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                        if (status === 'OK' && results[0]) {
+                            updateAddressFromGeocode(results[0]);
+                        }
+                    });
+                }
+            });
+
+            setMap(newMap);
+            setMarker(newMarker);
+        }
+    }, [activeTab, mapLoaded, map, geocoder]);
+
+    // Update marker position when latitude/longitude changes
+    useEffect(() => {
+        if (marker && academyForm.latitude && academyForm.longitude) {
+            const lat = parseFloat(academyForm.latitude);
+            const lng = parseFloat(academyForm.longitude);
+            if (!isNaN(lat) && !isNaN(lng)) {
+                marker.setPosition({ lat, lng });
+                if (map) {
+                    map.setCenter({ lat, lng });
+                }
+            }
+        }
+    }, [academyForm.latitude, academyForm.longitude, marker, map]);
+
+    const updateAddressFromGeocode = (result) => {
+        const addressComponents = result.address_components;
+        let streetName = '';
+        let houseNumber = '';
+        let city = '';
+        let state = '';
+        let pincode = '';
+
+        addressComponents.forEach(component => {
+            const types = component.types;
+            if (types.includes('street_number')) {
+                houseNumber = component.long_name;
+            } else if (types.includes('route')) {
+                streetName = component.long_name;
+            } else if (types.includes('locality') || types.includes('sublocality')) {
+                if (!city) city = component.long_name;
+            } else if (types.includes('administrative_area_level_1')) {
+                state = component.long_name;
+            } else if (types.includes('postal_code')) {
+                pincode = component.long_name;
+            }
+        });
+
+        setAcademyForm(prev => ({
+            ...prev,
+            houseNumber: houseNumber || prev.houseNumber,
+            streetName: streetName || prev.streetName,
+            city: city || prev.city,
+            state: state || prev.state,
+            pincode: pincode || prev.pincode
+        }));
+    };
+
+    const handleSearchLocation = () => {
+        if (!geocoder) return;
+        setAcademyForm(prev => {
+            if (!prev.searchLocation) return prev;
+            geocoder.geocode({ address: prev.searchLocation }, (results, status) => {
+                if (status === 'OK' && results[0]) {
+                    const location = results[0].geometry.location;
+                    const lat = location.lat();
+                    const lng = location.lng();
+
+                    setAcademyForm(prevForm => ({
+                        ...prevForm,
+                        latitude: lat.toString(),
+                        longitude: lng.toString()
+                    }));
+
+                    if (marker) {
+                        marker.setPosition({ lat, lng });
+                    }
+                    if (map) {
+                        map.setCenter({ lat, lng });
+                        map.setZoom(15);
+                    }
+
+                    updateAddressFromGeocode(results[0]);
+                } else {
+                    alert('Location not found. Please try a different search term.');
+                }
+            });
+            return prev;
+        });
+    };
+
+    const handleUseCurrentLocation = () => {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lng = position.coords.longitude;
+
+                    setAcademyForm(prev => ({
+                        ...prev,
+                        latitude: lat.toString(),
+                        longitude: lng.toString()
+                    }));
+
+                    if (marker) {
+                        marker.setPosition({ lat, lng });
+                    }
+                    if (map) {
+                        map.setCenter({ lat, lng });
+                        map.setZoom(15);
+                    }
+
+                    // Reverse geocode to get address
+                    if (geocoder) {
+                        geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                            if (status === 'OK' && results[0]) {
+                                updateAddressFromGeocode(results[0]);
+                            }
+                        });
+                    }
+                },
+                (error) => {
+                    alert('Unable to retrieve your location. Please enable location services.');
+                }
+            );
+        } else {
+            alert('Geolocation is not supported by your browser.');
+        }
+    };
+
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -196,6 +544,14 @@ export default function AcademiesPage() {
                         logo: file,
                         logoPreview: reader.result
                     });
+                    // Clear logo error when logo is uploaded
+                    if (fieldErrors.logo) {
+                        setFieldErrors(prev => {
+                            const newErrors = { ...prev };
+                            delete newErrors.logo;
+                            return newErrors;
+                        });
+                    }
                 };
                 reader.readAsDataURL(file);
             } else {
@@ -241,22 +597,172 @@ export default function AcademiesPage() {
 
     const handleSportToggle = (sportId) => {
         const isSelected = academyForm.selectedSports.includes(sportId);
+        const newSelectedSports = isSelected
+            ? academyForm.selectedSports.filter(id => id !== sportId)
+            : [...academyForm.selectedSports, sportId];
+        
+        // Initialize or remove media for the sport
+        const newMediaBySport = { ...academyForm.mediaBySport };
+        if (isSelected) {
+            // Remove media when sport is deselected
+            delete newMediaBySport[sportId];
+        } else {
+            // Initialize media when sport is selected
+            if (!newMediaBySport[sportId]) {
+                newMediaBySport[sportId] = {
+                    description: '',
+                    images: [],
+                    videos: []
+                };
+            }
+        }
+        
+        // Clear error when sport is selected
+        if (!isSelected && fieldErrors.selectedSports) {
+            setFieldErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.selectedSports;
+                return newErrors;
+            });
+        }
+        
         setAcademyForm({
             ...academyForm,
-            selectedSports: isSelected
-                ? academyForm.selectedSports.filter(id => id !== sportId)
-                : [...academyForm.selectedSports, sportId]
+            selectedSports: newSelectedSports,
+            mediaBySport: newMediaBySport
         });
     };
 
+    const handleFileUpload = (files, type, sportId = null) => {
+        if (!files || files.length === 0) return;
+        
+        // Documents are at academy level, not per sport
+        if (type === 'documents') {
+            sportId = null;
+        } else if (!sportId) {
+            return;
+        }
+        
+        const fileArray = Array.from(files);
+        const maxSize = {
+            images: 5 * 1024 * 1024, // 5MB
+            videos: 50 * 1024 * 1024, // 50MB
+            documents: 10 * 1024 * 1024 // 10MB
+        };
+        const allowedTypes = {
+            images: ['image/png', 'image/jpeg', 'image/jpg'],
+            videos: ['video/mp4', 'video/quicktime', 'video/mov'],
+            documents: ['application/pdf', 'image/jpeg', 'image/jpg']
+        };
+
+        const validFiles = [];
+        const invalidFiles = [];
+
+        fileArray.forEach(file => {
+            if (!allowedTypes[type].includes(file.type)) {
+                invalidFiles.push(`${file.name} is not a valid ${type === 'images' ? 'PNG/JPG' : type === 'videos' ? 'MP4/MOV' : 'PDF/JPG'} file`);
+                return;
+            }
+            if (file.size > maxSize[type]) {
+                invalidFiles.push(`${file.name} exceeds the maximum size limit (${type === 'images' ? '5MB' : type === 'videos' ? '50MB' : '10MB'})`);
+                return;
+            }
+            validFiles.push(file);
+        });
+
+        if (invalidFiles.length > 0) {
+            alert(invalidFiles.join('\n'));
+        }
+
+        if (validFiles.length === 0) return;
+
+        // Read all valid files
+        const promises = validFiles.map(file => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    resolve({
+                        file: file,
+                        preview: reader.result,
+                        name: file.name,
+                        size: file.size
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        Promise.all(promises).then(newFiles => {
+            if (type === 'documents') {
+                // Documents are at academy level
+                setAcademyForm(prev => ({
+                    ...prev,
+                    documents: [...prev.documents, ...newFiles]
+                }));
+            } else {
+                // Images and videos are per sport
+                setAcademyForm(prev => {
+                    const newMediaBySport = { ...prev.mediaBySport };
+                    if (!newMediaBySport[sportId]) {
+                        newMediaBySport[sportId] = {
+                            description: '',
+                            images: [],
+                            videos: []
+                        };
+                    }
+                    newMediaBySport[sportId] = {
+                        ...newMediaBySport[sportId],
+                        [type]: [...newMediaBySport[sportId][type], ...newFiles]
+                    };
+                    return {
+                        ...prev,
+                        mediaBySport: newMediaBySport
+                    };
+                });
+            }
+        });
+    };
+
+    const handleRemoveFile = (index, type, sportId = null) => {
+        if (type === 'documents') {
+            // Documents are at academy level
+            setAcademyForm(prev => ({
+                ...prev,
+                documents: prev.documents.filter((_, i) => i !== index)
+            }));
+        } else {
+            // Images and videos are per sport
+            setAcademyForm(prev => {
+                const newMediaBySport = { ...prev.mediaBySport };
+                if (newMediaBySport[sportId]) {
+                    newMediaBySport[sportId] = {
+                        ...newMediaBySport[sportId],
+                        [type]: newMediaBySport[sportId][type].filter((_, i) => i !== index)
+                    };
+                }
+                return {
+                    ...prev,
+                    mediaBySport: newMediaBySport
+                };
+            });
+        }
+    };
+
     const handleAddAcademy = () => {
+        formJustOpenedRef.current = true;
         setEditingAcademy(null);
         setActiveTab('basic');
         setIfscError('');
+        setSportSearchTerm('');
+        setFieldErrors({});
         setAcademyForm({
             centerName: '',
             phoneNumber: '',
             email: '',
+            experience: '',
+            allowedGenders: [],
+            allowDisability: false,
+            onlyForDisabled: false,
             rules: [],
             newRule: '',
             logo: null,
@@ -270,8 +776,15 @@ export default function AcademiesPage() {
             state: '',
             city: '',
             pincode: '',
+            searchLocation: '',
+            houseNumber: '',
+            streetName: '',
+            latitude: '',
+            longitude: '',
             selectedSports: [],
             media: [],
+            mediaBySport: {},
+            documents: [],
             callTimeFrom: '',
             callTimeTo: '',
             timings: [],
@@ -289,16 +802,26 @@ export default function AcademiesPage() {
             status: 'active'
         });
         setShowAcademyModal(true);
+        // Reset flag after a short delay to allow form to render
+        setTimeout(() => {
+            formJustOpenedRef.current = false;
+        }, 100);
     };
 
     const handleEditAcademy = (academy) => {
+        formJustOpenedRef.current = true;
         setEditingAcademy(academy);
         setActiveTab('basic');
         setIfscError('');
+        setFieldErrors({});
         setAcademyForm({
             centerName: academy.centerName || academy.academyName || academy.name || '',
             phoneNumber: academy.phoneNumber || academy.mobileNumber || academy.contact || '',
             email: academy.email || '',
+            experience: academy.experience || '',
+            allowedGenders: academy.allowedGenders || [],
+            allowDisability: academy.allowDisability || false,
+            onlyForDisabled: academy.onlyForDisabled || false,
             rules: academy.rules || [],
             newRule: '',
             logo: null,
@@ -312,6 +835,11 @@ export default function AcademiesPage() {
             state: academy.state || '',
             city: academy.city || '',
             pincode: academy.pincode || '',
+            searchLocation: academy.searchLocation || '',
+            houseNumber: academy.houseNumber || '',
+            streetName: academy.streetName || '',
+            latitude: academy.latitude || '',
+            longitude: academy.longitude || '',
             selectedSports: academy.selectedSports || (academy.sport 
                 ? (typeof academy.sport === 'string' 
                     ? academy.sport.split(',').map(s => {
@@ -322,6 +850,31 @@ export default function AcademiesPage() {
                     : Array.isArray(academy.sport) ? academy.sport : [academy.sport])
                 : []),
             media: academy.media || [],
+            mediaBySport: (() => {
+                // Initialize mediaBySport from academy data or create empty structure for selected sports
+                const selectedSportsArray = academy.selectedSports || (academy.sport 
+                    ? (typeof academy.sport === 'string' 
+                        ? academy.sport.split(',').map(s => {
+                            const trimmed = s.trim();
+                            return /^\d+$/.test(trimmed) ? parseInt(trimmed, 10) : trimmed;
+                        }).filter(s => s !== '' && s !== null && s !== undefined)
+                        : Array.isArray(academy.sport) ? academy.sport : [academy.sport])
+                    : []);
+                const mediaBySport = academy.mediaBySport || {};
+                // Ensure all selected sports have media objects initialized
+                const result = { ...mediaBySport };
+                selectedSportsArray.forEach(sportId => {
+                    if (!result[sportId]) {
+                        result[sportId] = {
+                            description: '',
+                            images: [],
+                            videos: []
+                        };
+                    }
+                });
+                return result;
+            })(),
+            documents: academy.documents || [],
             callTimeFrom: academy.callTimeFrom || '',
             callTimeTo: academy.callTimeTo || '',
             timings: academy.timings || [],
@@ -339,6 +892,10 @@ export default function AcademiesPage() {
             status: academy.status || 'active'
         });
         setShowAcademyModal(true);
+        // Reset flag after a short delay to allow form to render
+        setTimeout(() => {
+            formJustOpenedRef.current = false;
+        }, 100);
     };
 
     const handleCloseAcademyModal = () => {
@@ -346,10 +903,16 @@ export default function AcademiesPage() {
         setEditingAcademy(null);
         setActiveTab('basic');
         setIfscError('');
+        setSportSearchTerm('');
+        setFieldErrors({});
         setAcademyForm({
             centerName: '',
             phoneNumber: '',
             email: '',
+            experience: '',
+            allowedGenders: [],
+            allowDisability: false,
+            onlyForDisabled: false,
             rules: [],
             newRule: '',
             logo: null,
@@ -363,8 +926,15 @@ export default function AcademiesPage() {
             state: '',
             city: '',
             pincode: '',
+            searchLocation: '',
+            houseNumber: '',
+            streetName: '',
+            latitude: '',
+            longitude: '',
             selectedSports: [],
             media: [],
+            mediaBySport: {},
+            documents: [],
             callTimeFrom: '',
             callTimeTo: '',
             timings: [],
@@ -381,6 +951,24 @@ export default function AcademiesPage() {
             createDate: new Date().toISOString().split('T')[0],
             status: 'active'
         });
+        // Clean up map
+        if (marker) {
+            marker.setMap(null);
+            setMarker(null);
+        }
+        if (map) {
+            setMap(null);
+        }
+        // Reset file inputs
+        if (imagesInputRef.current) {
+            imagesInputRef.current.value = '';
+        }
+        if (videosInputRef.current) {
+            videosInputRef.current.value = '';
+        }
+        if (documentsInputRef.current) {
+            documentsInputRef.current.value = '';
+        }
     };
 
     const handleSaveAcademy = () => {
@@ -388,6 +976,30 @@ export default function AcademiesPage() {
             alert('Please fill in all required Basic fields (Center Name, Phone Number, Email)');
             setActiveTab('basic');
             return;
+        }
+        // Validate Experience
+        if (!academyForm.experience || academyForm.experience.trim() === '') {
+            alert('Please enter Experience (years)');
+            setActiveTab('basic');
+            return;
+        }
+        // Validate Allowed Genders
+        if (!academyForm.allowedGenders || academyForm.allowedGenders.length === 0) {
+            alert('Please select at least one Allowed Gender');
+            setActiveTab('basic');
+            return;
+        }
+        // Validate description for each selected sport
+        if (academyForm.selectedSports.length > 0) {
+            for (const sportId of academyForm.selectedSports) {
+                const sportMedia = academyForm.mediaBySport[sportId];
+                if (!sportMedia || !sportMedia.description || sportMedia.description.trim().length < 5) {
+                    const sport = sports.find(s => s.id === sportId);
+                    alert(`Please enter a description with at least 5 characters for ${sport ? sport.name : 'the selected sport'}`);
+                    setActiveTab('media');
+                    return;
+                }
+            }
         }
         if (academyForm.ifscCode && !validateIFSC(academyForm.ifscCode)) {
             alert('Please enter a valid IFSC code');
@@ -426,7 +1038,433 @@ export default function AcademiesPage() {
         handleCloseAcademyModal();
     };
 
+    const formatTime = (dateString) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return '';
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        } catch {
+            return '';
+        }
+    };
+
+    const exportAcademiesToCSV = () => {
+        // CSV headers
+        const headers = ['First Name', 'Last Name', 'Academy Name', 'Email', 'Mobile Number', 'Added By', 'Created Date', 'Time (HH:MM)', 'Status', 'City', 'State'];
+        
+        // Prepare data rows
+        const rows = academies.map(academy => {
+            // Get first name and last name from academyForm fields or ownerName
+            let firstName = '';
+            let lastName = '';
+            
+            if (academy.firstName && academy.lastName) {
+                firstName = academy.firstName;
+                lastName = academy.lastName;
+            } else if (academy.ownerName) {
+                const nameParts = academy.ownerName.trim().split(' ');
+                firstName = nameParts[0] || '';
+                lastName = nameParts.slice(1).join(' ') || '';
+            }
+            
+            // Get email
+            const email = academy.email || '';
+            
+            // Get mobile number
+            const mobileNumber = academy.mobileNumber || academy.contact || academy.phoneNumber || '';
+            
+            // Get added by
+            const addedBy = academy.addedBy || 'Admin';
+            
+            // Get created date and time
+            let createDate = academy.createDate || '';
+            let createTime = '';
+            if (createDate) {
+                createTime = formatTime(createDate);
+            }
+            
+            // Get status
+            const status = academy.status === 'active' ? 'Active' : (academy.status === 'inactive' ? 'Inactive' : 'Pending');
+            
+            // Get city and state
+            const city = academy.city || '';
+            const state = academy.state || '';
+            
+            return [
+                firstName,
+                lastName,
+                email,
+                mobileNumber,
+                addedBy,
+                createDate,
+                createTime,
+                status,
+                city,
+                state
+            ];
+        });
+        
+        // Combine headers and rows
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => {
+                // Escape commas and quotes in cell values
+                const cellStr = String(cell || '');
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(','))
+        ].join('\n');
+        
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `academies_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Validation functions for each tab
+    const validateBasicTab = () => {
+        const errors = {};
+        let isValid = true;
+
+        if (!academyForm.centerName || !academyForm.centerName.trim()) {
+            errors.centerName = 'Center Name is required';
+            isValid = false;
+        }
+        
+        // Phone number validation: must be 10 digits and start with 6, 7, 8, or 9
+        if (!academyForm.phoneNumber || !academyForm.phoneNumber.trim()) {
+            errors.phoneNumber = 'Mobile Number is required';
+            isValid = false;
+        } else {
+            const phoneNumber = academyForm.phoneNumber.trim();
+            if (phoneNumber.length !== 10) {
+                errors.phoneNumber = 'Mobile Number must be exactly 10 digits';
+                isValid = false;
+            } else if (!/^[6789]/.test(phoneNumber)) {
+                errors.phoneNumber = 'Mobile Number must start with 6, 7, 8, or 9';
+                isValid = false;
+            }
+        }
+        
+        // Email validation: must be valid email format
+        if (!academyForm.email || !academyForm.email.trim()) {
+            errors.email = 'Email is required';
+            isValid = false;
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(academyForm.email.trim())) {
+                errors.email = 'Please enter a valid email address (e.g., abc@example.com)';
+                isValid = false;
+            }
+        }
+        
+        if (!academyForm.logo && !academyForm.logoPreview) {
+            errors.logo = 'Center Logo is required';
+            isValid = false;
+        }
+        if (!academyForm.experience || academyForm.experience.trim() === '') {
+            errors.experience = 'Experience is required';
+            isValid = false;
+        }
+        if (!academyForm.allowedGenders || academyForm.allowedGenders.length === 0) {
+            errors.allowedGenders = 'Allowed Genders is required';
+            isValid = false;
+        }
+        
+        // Minimum age validation: must be >= 3
+        if (!academyForm.minimumAge || !academyForm.minimumAge.trim()) {
+            errors.minimumAge = 'Minimum Age is required';
+            isValid = false;
+        } else {
+            const minAge = parseInt(academyForm.minimumAge.trim());
+            if (isNaN(minAge) || minAge < 3) {
+                errors.minimumAge = 'Minimum Age must be 3 or above';
+                isValid = false;
+            }
+        }
+        
+        // Maximum age validation: must be <= 18
+        if (!academyForm.maximumAge || !academyForm.maximumAge.trim()) {
+            errors.maximumAge = 'Maximum Age is required';
+            isValid = false;
+        } else {
+            const maxAge = parseInt(academyForm.maximumAge.trim());
+            if (isNaN(maxAge) || maxAge > 18) {
+                errors.maximumAge = 'Maximum Age must be 18 or below';
+                isValid = false;
+            }
+        }
+        
+        // Check if maximum age is greater than minimum age
+        if (academyForm.minimumAge && academyForm.maximumAge) {
+            const minAge = parseInt(academyForm.minimumAge.trim());
+            const maxAge = parseInt(academyForm.maximumAge.trim());
+            if (!isNaN(minAge) && !isNaN(maxAge) && maxAge <= minAge) {
+                errors.maximumAge = 'Maximum Age must be greater than Minimum Age';
+                isValid = false;
+            }
+        }
+
+        // Clear errors for fields that are valid
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(errors).forEach(key => {
+                if (!errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            return { ...newErrors, ...errors };
+        });
+
+        return isValid;
+    };
+
+    const validateLocationTab = () => {
+        const errors = {};
+        let isValid = true;
+
+        // Use streetName for validation (it's the field in Location tab)
+        if (!academyForm.streetName || !academyForm.streetName.trim()) {
+            errors.addressLineOne = 'Address Line One is required';
+            isValid = false;
+        }
+        if (!academyForm.state || !academyForm.state.trim()) {
+            errors.state = 'State is required';
+            isValid = false;
+        }
+        if (!academyForm.city || !academyForm.city.trim()) {
+            errors.city = 'City is required';
+            isValid = false;
+        }
+        if (!academyForm.pincode || !academyForm.pincode.trim()) {
+            errors.pincode = 'Pincode is required';
+            isValid = false;
+        }
+
+        // Clear errors for fields that are valid
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(errors).forEach(key => {
+                if (!errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            return { ...newErrors, ...errors };
+        });
+
+        return isValid;
+    };
+
+    const validateSportsTab = () => {
+        const errors = {};
+        let isValid = true;
+
+        if (!academyForm.selectedSports || academyForm.selectedSports.length === 0) {
+            errors.selectedSports = 'At least one Sport is required';
+            isValid = false;
+        }
+
+        // Clear errors for fields that are valid
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(errors).forEach(key => {
+                if (!errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            return { ...newErrors, ...errors };
+        });
+
+        return isValid;
+    };
+
+    const validateMediaTab = () => {
+        const errors = {};
+        let isValid = true;
+
+        if (academyForm.selectedSports.length > 0) {
+            for (const sportId of academyForm.selectedSports) {
+                const sportMedia = academyForm.mediaBySport[sportId];
+                if (!sportMedia || !sportMedia.description || sportMedia.description.trim().length < 5) {
+                    const sport = sports.find(s => s.id === sportId);
+                    errors[`media_description_${sportId}`] = `Description for ${sport ? sport.name : 'selected sport'} is required (minimum 5 characters)`;
+                    isValid = false;
+                }
+            }
+        }
+
+        // Clear errors for fields that are valid
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(errors).forEach(key => {
+                if (!errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            // Clear previous media description errors
+            Object.keys(newErrors).forEach(key => {
+                if (key.startsWith('media_description_') && !errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            return { ...newErrors, ...errors };
+        });
+
+        return isValid;
+    };
+
+    const validateTimingsTab = () => {
+        // Add validation for timings if needed
+        return true;
+    };
+
+    const validateBankingTab = () => {
+        const errors = {};
+        let isValid = true;
+
+        if (academyForm.ifscCode && !validateIFSC(academyForm.ifscCode)) {
+            errors.ifscCode = 'IFSC Code is invalid';
+            isValid = false;
+        }
+
+        // Clear errors for fields that are valid
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            Object.keys(errors).forEach(key => {
+                if (!errors[key]) {
+                    delete newErrors[key];
+                }
+            });
+            return { ...newErrors, ...errors };
+        });
+
+        return isValid;
+    };
+
+    const validateTab = (tabId) => {
+        switch (tabId) {
+            case 'basic':
+                return validateBasicTab();
+            case 'location':
+                return validateLocationTab();
+            case 'sports':
+                return validateSportsTab();
+            case 'media':
+                return validateMediaTab();
+            case 'timings':
+                return validateTimingsTab();
+            case 'banking':
+                return validateBankingTab();
+            default:
+                return true;
+        }
+    };
+
+    const isTabAccessible = (tabId) => {
+        const tabIndex = tabs.findIndex(t => t.id === tabId);
+        const currentTabIndex = tabs.findIndex(t => t.id === activeTab);
+        
+        // Can always access current tab or previous tabs
+        if (tabIndex <= currentTabIndex) {
+            return true;
+        }
+        
+        // For next tabs, use silent validation to check if all previous tabs are complete
+        // Must complete tabs in order: Basic -> Location -> Sports -> Media -> Timings -> Banking
+        // Use silent validation (no alerts) to avoid showing errors during render
+        for (let i = 0; i < tabIndex; i++) {
+            if (!validateTabSilent(tabs[i].id)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    // Silent validation (no alerts) for checking tab accessibility during render
+    const validateTabSilent = (tabId) => {
+        switch (tabId) {
+            case 'basic':
+                return Boolean(
+                    academyForm.centerName?.trim() && 
+                    academyForm.phoneNumber?.trim() && 
+                    academyForm.email?.trim() &&
+                    (academyForm.logo || academyForm.logoPreview) &&
+                    academyForm.experience?.trim() &&
+                    academyForm.allowedGenders?.length > 0 &&
+                    academyForm.minimumAge?.trim() &&
+                    academyForm.maximumAge?.trim()
+                );
+            case 'location':
+                return Boolean(
+                    academyForm.addressLineOne?.trim() &&
+                    academyForm.state?.trim() &&
+                    academyForm.city?.trim() &&
+                    academyForm.pincode?.trim()
+                );
+            case 'sports':
+                return Boolean(academyForm.selectedSports?.length > 0);
+            case 'media':
+                if (academyForm.selectedSports.length > 0) {
+                    for (const sportId of academyForm.selectedSports) {
+                        const sportMedia = academyForm.mediaBySport[sportId];
+                        if (!sportMedia || !sportMedia.description || sportMedia.description.trim().length < 5) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            case 'timings':
+                return true;
+            case 'banking':
+                return !academyForm.ifscCode || validateIFSC(academyForm.ifscCode);
+            default:
+                return true;
+        }
+    };
+
+    const handleTabClick = (tabId) => {
+        // Don't validate if form just opened (prevents alerts on initial render)
+        if (formJustOpenedRef.current) {
+            setActiveTab(tabId);
+            return;
+        }
+        
+        // Prevent navigation if tab is not accessible
+        if (!isTabAccessible(tabId)) {
+            // Find the first invalid tab using silent validation first
+            const tabIndex = tabs.findIndex(t => t.id === tabId);
+            for (let i = 0; i < tabIndex; i++) {
+                if (!validateTabSilent(tabs[i].id)) {
+                    // Only show alert when user actually tries to navigate
+                    // Use validateTab to get the specific error message
+                    validateTab(tabs[i].id);
+                    setActiveTab(tabs[i].id);
+                    return;
+                }
+            }
+            return;
+        }
+        
+        setActiveTab(tabId);
+    };
+
     const handleNextTab = () => {
+        // Validate current tab before proceeding
+        if (!validateTab(activeTab)) {
+            return;
+        }
+        
         const currentIndex = tabs.findIndex(t => t.id === activeTab);
         if (currentIndex < tabs.length - 1) {
             setActiveTab(tabs[currentIndex + 1].id);
@@ -440,11 +1478,50 @@ export default function AcademiesPage() {
         }
     };
 
-    const filteredAcademies = academies.filter(academy =>
-        academy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    // Get unique "Added By" values
+    const uniqueAddedBy = [...new Set(academies.map(academy => academy.addedBy || 'Admin').filter(Boolean))];
+
+    const filteredAcademies = academies.filter(academy => {
+        // Search filter
+        const matchesSearch = academy.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         academy.ownerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        academy.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+            academy.email.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Status filter
+        const matchesStatus = statusFilter === 'all' || 
+            (statusFilter === 'active' && academy.status === 'active') ||
+            (statusFilter === 'inactive' && academy.status === 'inactive');
+        
+        // Added By filter
+        const matchesAddedBy = addedByFilter === 'all' || 
+            (academy.addedBy || 'Admin') === addedByFilter;
+        
+        // Sports filter
+        const matchesSports = (() => {
+            if (sportsFilter === 'all') return true;
+            const sportId = sportsFilter;
+            // Handle different formats: comma-separated string, array, or selectedSports
+            if (academy.selectedSports && Array.isArray(academy.selectedSports)) {
+                return academy.selectedSports.includes(parseInt(sportId)) || academy.selectedSports.includes(sportId);
+            }
+            if (academy.sport) {
+                if (typeof academy.sport === 'string') {
+                    const sportIds = academy.sport.split(',').map(s => s.trim());
+                    return sportIds.includes(sportId.toString()) || sportIds.includes(parseInt(sportId).toString());
+                }
+                if (Array.isArray(academy.sport)) {
+                    return academy.sport.includes(parseInt(sportId)) || academy.sport.includes(sportId);
+                }
+            }
+            return false;
+        })();
+        
+        return matchesSearch && matchesStatus && matchesAddedBy && matchesSports;
+    });
+
+    // Calculate stats
+    const totalAcademies = academies.length;
+    const activeAcademies = academies.filter(academy => academy.status === 'active').length;
 
     const totalPages = Math.max(1, Math.ceil(filteredAcademies.length / pageSize));
     const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -460,8 +1537,8 @@ export default function AcademiesPage() {
 
     // If showing form, render full page form instead of list
     if (showAcademyModal) {
-        return (
-            <div style={styles.mainContent}>
+    return (
+        <div style={styles.mainContent}>
                 {renderConfirmModal()}
                 {/* Form Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
@@ -509,7 +1586,8 @@ export default function AcademiesPage() {
                         return (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
+                                onClick={() => handleTabClick(tab.id)}
+                                disabled={!isTabAccessible(tab.id)}
                                 style={{
                                     padding: '12px 20px',
                                     borderWidth: isActive ? '1px' : '0',
@@ -517,15 +1595,16 @@ export default function AcademiesPage() {
                                     borderColor: isActive ? '#e2e8f0' : 'transparent',
                                     background: isActive ? '#ffffff' : 'transparent',
                                     borderRadius: isActive ? '8px' : '0',
-                                    color: isActive ? '#0f172a' : '#64748b',
+                                    color: isActive ? '#0f172a' : (!isTabAccessible(tab.id) ? '#cbd5e1' : '#64748b'),
                                     fontWeight: isActive ? '700' : '500',
                                     fontSize: '14px',
-                                    cursor: 'pointer',
+                                    cursor: isTabAccessible(tab.id) ? 'pointer' : 'not-allowed',
                                     transition: 'all 0.2s ease',
                                     boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
                                     flex: '1',
                                     textAlign: 'center',
-                                    fontFamily: navFontFamily
+                                    fontFamily: navFontFamily,
+                                    opacity: isTabAccessible(tab.id) ? 1 : 0.5
                                 }}
                             >
                                 {tab.label}
@@ -551,13 +1630,27 @@ export default function AcademiesPage() {
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
                                     Center Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    style={{ ...styles.input, fontFamily: navFontFamily }}
+                <input
+                    type="text"
+                                    style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.centerName ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.centerName}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, centerName: e.target.value })}
+                                    onChange={(e) => {
+                                        setAcademyForm({ ...academyForm, centerName: e.target.value });
+                                        if (fieldErrors.centerName) {
+                                            setFieldErrors(prev => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors.centerName;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
                                     placeholder="Enter center name"
                                 />
+                                {fieldErrors.centerName && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.centerName}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -578,13 +1671,32 @@ export default function AcademiesPage() {
                                     </div>
                                     <input
                                         type="tel"
-                                        style={{ ...styles.input, marginBottom: 0, flex: 1, fontFamily: navFontFamily }}
+                                        style={{ ...styles.input, marginBottom: 0, flex: 1, fontFamily: navFontFamily, borderColor: fieldErrors.phoneNumber ? '#ef4444' : styles.input.borderColor }}
                                         value={academyForm.phoneNumber}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                                        placeholder="Enter 10-digit mobile number"
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, '');
+                                            // Allow any number input, validation will check the value
+                                            setAcademyForm({ ...academyForm, phoneNumber: value.slice(0, 10) });
+                                            // Clear error if value becomes valid
+                                            if (value && value.length === 10 && /^[6789]/.test(value)) {
+                                                if (fieldErrors.phoneNumber) {
+                                                    setFieldErrors(prev => {
+                                                        const newErrors = { ...prev };
+                                                        delete newErrors.phoneNumber;
+                                                        return newErrors;
+                                                    });
+                                                }
+                                            }
+                                        }}
+                                        placeholder="Enter 10-digit mobile number (Starts with 6,7,8,9)"
                                         maxLength={10}
                                     />
                                 </div>
+                                {fieldErrors.phoneNumber && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.phoneNumber}
+                                    </div>
+                                )}
                             </div>
 
                             <div>
@@ -593,11 +1705,234 @@ export default function AcademiesPage() {
                                 </label>
                                 <input
                                     type="email"
-                                    style={{ ...styles.input, fontFamily: navFontFamily }}
+                                    style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.email ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.email}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, email: e.target.value })}
+                                    onChange={(e) => {
+                                        setAcademyForm({ ...academyForm, email: e.target.value });
+                                        if (fieldErrors.email) {
+                                            setFieldErrors(prev => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors.email;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
                                     placeholder="center@example.com"
                                 />
+                                {fieldErrors.email && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.email}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr', gap: '20px', alignItems: 'start' }}>
+                                {/* Experience */}
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Experience <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.experience ? '#ef4444' : styles.input.borderColor }}
+                                        value={academyForm.experience}
+                                        onChange={(e) => {
+                                            const value = e.target.value.replace(/\D/g, '');
+                                            setAcademyForm({ ...academyForm, experience: value });
+                                            if (fieldErrors.experience) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.experience;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        placeholder="Enter years"
+                                        min="0"
+                                        required
+                                    />
+                                    {fieldErrors.experience && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.experience}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Allowed Genders */}
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Allowed Genders <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        {['Male', 'Female', 'Other'].map((gender) => (
+                                            <label
+                                                key={gender}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '8px',
+                                                    cursor: 'pointer',
+                                                    fontSize: '14px',
+                                                    fontFamily: navFontFamily
+                                                }}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={academyForm.allowedGenders.includes(gender)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setAcademyForm({
+                                                                ...academyForm,
+                                                                allowedGenders: [...academyForm.allowedGenders, gender]
+                                                            });
+                                                        } else {
+                                                            setAcademyForm({
+                                                                ...academyForm,
+                                                                allowedGenders: academyForm.allowedGenders.filter(g => g !== gender)
+                                                            });
+                                                        }
+                                                        if (fieldErrors.allowedGenders) {
+                                                            setFieldErrors(prev => {
+                                                                const newErrors = { ...prev };
+                                                                delete newErrors.allowedGenders;
+                                                                return newErrors;
+                                                            });
+                                                        }
+                                                    }}
+                                                    style={{
+                                                        width: '18px',
+                                                        height: '18px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                />
+                                                <span>{gender}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    {fieldErrors.allowedGenders && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.allowedGenders}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Allow Disability */}
+                                <div>
+                                    <div style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Allow Disability <span style={{ color: '#ef4444' }}>*</span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '8px', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontFamily: navFontFamily }}>
+                                            <input
+                                                type="radio"
+                                                name="allowDisability"
+                                                id="allowDisabilityYes"
+                                                checked={academyForm.allowDisability === true}
+                                                onChange={() => setAcademyForm({ ...academyForm, allowDisability: true })}
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    cursor: 'pointer',
+                                                    margin: 0
+                                                }}
+                                            />
+                                            <label 
+                                                htmlFor="allowDisabilityYes"
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    margin: 0,
+                                                    userSelect: 'none'
+                                                }}
+                                            >
+                                                Yes
+                                            </label>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontFamily: navFontFamily }}>
+                                            <input
+                                                type="radio"
+                                                name="allowDisability"
+                                                id="allowDisabilityNo"
+                                                checked={academyForm.allowDisability === false}
+                                                onChange={() => setAcademyForm({ ...academyForm, allowDisability: false })}
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    cursor: 'pointer',
+                                                    margin: 0
+                                                }}
+                                            />
+                                            <label 
+                                                htmlFor="allowDisabilityNo"
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    margin: 0,
+                                                    userSelect: 'none'
+                                                }}
+                                            >
+                                                No
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Only For Disabled */}
+                                <div>
+                                    <div style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Only For Disabled <span style={{ color: '#ef4444' }}>*</span>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'row', gap: '20px', marginTop: '8px', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontFamily: navFontFamily }}>
+                                            <input
+                                                type="radio"
+                                                name="onlyForDisabled"
+                                                id="onlyForDisabledYes"
+                                                checked={academyForm.onlyForDisabled === true}
+                                                onChange={() => setAcademyForm({ ...academyForm, onlyForDisabled: true })}
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    cursor: 'pointer',
+                                                    margin: 0
+                                                }}
+                                            />
+                                            <label 
+                                                htmlFor="onlyForDisabledYes"
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    margin: 0,
+                                                    userSelect: 'none'
+                                                }}
+                                            >
+                                                Yes
+                                            </label>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontFamily: navFontFamily }}>
+                                            <input
+                                                type="radio"
+                                                name="onlyForDisabled"
+                                                id="onlyForDisabledNo"
+                                                checked={academyForm.onlyForDisabled === false}
+                                                onChange={() => setAcademyForm({ ...academyForm, onlyForDisabled: false })}
+                                                style={{
+                                                    width: '18px',
+                                                    height: '18px',
+                                                    cursor: 'pointer',
+                                                    margin: 0
+                                                }}
+                                            />
+                                            <label 
+                                                htmlFor="onlyForDisabledNo"
+                                                style={{ 
+                                                    cursor: 'pointer',
+                                                    margin: 0,
+                                                    userSelect: 'none'
+                                                }}
+                                            >
+                                                No
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div>
@@ -688,93 +2023,180 @@ export default function AcademiesPage() {
                                 </div>
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Center Logo <span style={{ color: '#ef4444' }}>*</span>
-                                </label>
-                                <div style={{
-                                    border: '2px dashed #cbd5e1',
-                                    borderRadius: '8px',
-                                    padding: '40px',
-                                    textAlign: 'center',
-                                    cursor: 'pointer',
-                                    backgroundColor: '#fafafa',
-                                    transition: 'all 0.2s ease',
-                                    position: 'relative'
-                                }}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                    e.currentTarget.style.borderColor = '#023B84';
-                                    e.currentTarget.style.backgroundColor = '#f0f9ff';
-                                }}
-                                onDragLeave={(e) => {
-                                    e.currentTarget.style.borderColor = '#cbd5e1';
-                                    e.currentTarget.style.backgroundColor = '#fafafa';
-                                }}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    e.currentTarget.style.borderColor = '#cbd5e1';
-                                    e.currentTarget.style.backgroundColor = '#fafafa';
-                                    const file = e.dataTransfer.files[0];
-                                    if (file) {
-                                        const fakeEvent = { target: { files: [file] } };
-                                        handleLogoUpload(fakeEvent);
-                                    }
-                                }}
-                                >
-                                    {academyForm.logoPreview ? (
-                                        <div>
-                                            <img src={academyForm.logoPreview} alt="Logo preview" style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '8px', marginBottom: '12px' }} />
-                                            <div>
-                                                <label style={{
-                                                    display: 'inline-block',
-                                                    padding: '8px 16px',
-                                                    backgroundColor: '#023B84',
-                                                    color: '#fff',
-                                                    borderRadius: '6px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '14px',
-                                                    fontWeight: '600'
-                                                }}>
-                                                    Change Logo
-                                                    <input
-                                                        type="file"
-                                                        accept=".jpg,.jpeg,.png"
-                                                        onChange={handleLogoUpload}
-                                                        style={{ display: 'none' }}
-                                                    />
-                                                </label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                                {/* Left Column: Logo */}
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                                        Center Logo <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <div style={{
+                                        border: `2px dashed ${fieldErrors.logo ? '#ef4444' : '#cbd5e1'}`,
+                                        borderRadius: '8px',
+                                        padding: '40px',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        backgroundColor: '#fafafa',
+                                        transition: 'all 0.2s ease',
+                                        height: '100%',
+                                        width: '100%',
+                                        minHeight: '220px',
+                                        maxHeight: '220px',
+                                        minWidth: '220px',
+                                        maxWidth: '220px',
+                                        aspectRatio: '1 / 1',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.style.borderColor = '#023B84';
+                                        e.currentTarget.style.backgroundColor = '#f0f9ff';
+                                    }}
+                                    onDragLeave={(e) => {
+                                        e.currentTarget.style.borderColor = '#cbd5e1';
+                                        e.currentTarget.style.backgroundColor = '#fafafa';
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.style.borderColor = '#cbd5e1';
+                                        e.currentTarget.style.backgroundColor = '#fafafa';
+                                        const file = e.dataTransfer.files[0];
+                                        if (file) {
+                                            const fakeEvent = { target: { files: [file] } };
+                                            handleLogoUpload(fakeEvent);
+                                        }
+                                    }}
+                                    >
+                                        {academyForm.logoPreview ? (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                                                <div style={{ position: 'relative', display: 'inline-block', marginBottom: '12px' }}>
+                                                    <img src={academyForm.logoPreview} alt="Logo preview" style={{ maxWidth: '150px', maxHeight: '150px', borderRadius: '8px', display: 'block' }} />
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setAcademyForm({ ...academyForm, logo: null, logoPreview: '' });
+                                                            if (fieldErrors.logo) {
+                                                                setFieldErrors(prev => {
+                                                                    const newErrors = { ...prev };
+                                                                    delete newErrors.logo;
+                                                                    return newErrors;
+                                                                });
+                                                            }
+                                                        }}
+                                                        style={{
+                                                            position: 'absolute',
+                                                            top: '-8px',
+                                                            right: '-8px',
+                                                            width: '28px',
+                                                            height: '28px',
+                                                            borderRadius: '50%',
+                                                            backgroundColor: '#f97316',
+                                                            color: '#fff',
+                                                            border: '2px solid #fff',
+                                                            cursor: 'pointer',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '18px',
+                                                            fontWeight: 'bold',
+                                                            zIndex: 10,
+                                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                                                            transition: 'all 0.2s ease'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.backgroundColor = '#ea580c';
+                                                            e.currentTarget.style.transform = 'scale(1.1)';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.backgroundColor = '#f97316';
+                                                            e.currentTarget.style.transform = 'scale(1)';
+                                                        }}
+                                                        title="Delete logo"
+                                                    >
+                                                        <X size={16} />
+                                                    </button>
+                                                </div>
+                                                <div>
+                                                    <label style={{
+                                                        display: 'inline-block',
+                                                        padding: '8px 16px',
+                                                        backgroundColor: '#023B84',
+                                                        color: '#fff',
+                                                        borderRadius: '6px',
+                                                        cursor: 'pointer',
+                                                        fontSize: '14px',
+                                                        fontWeight: '600'
+                                                    }}>
+                                                        Change Logo
+                                                        <input
+                                                            type="file"
+                                                            accept=".jpg,.jpeg,.png"
+                                                            onChange={handleLogoUpload}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                    </label>
+                                                </div>
                                             </div>
+                                        ) : (
+                                            <label style={{ cursor: 'pointer', display: 'block' }}>
+                                                <Upload size={32} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
+                                                <div style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>Upload Logo</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>PNG, JPG up to 5MB</div>
+                                                <input
+                                                    type="file"
+                                                    accept=".jpg,.jpeg,.png"
+                                                    onChange={handleLogoUpload}
+                                                    style={{ display: 'none' }}
+                                                />
+                                            </label>
+                                        )}
+                                    </div>
+                                    {fieldErrors.logo && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.logo}
                                         </div>
-                                    ) : (
-                                        <label style={{ cursor: 'pointer', display: 'block' }}>
-                                            <Upload size={32} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
-                                            <div style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>Upload Logo</div>
-                                            <div style={{ fontSize: '12px', color: '#64748b' }}>PNG, JPG up to 5MB</div>
-                                            <input
-                                                type="file"
-                                                accept=".jpg,.jpeg,.png"
-                                                onChange={handleLogoUpload}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </label>
                                     )}
                                 </div>
+
+                                {/* Right Column: Empty space to align with logo */}
+                                <div></div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                            {/* Minimum and Maximum Age - Below the logo */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
                                         Minimum Age <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <input
                                         type="number"
-                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.minimumAge ? '#ef4444' : styles.input.borderColor }}
                                         value={academyForm.minimumAge}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, minimumAge: e.target.value })}
-                                        placeholder="e.g., 5"
-                                        min="0"
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Allow any number input, validation will check the value
+                                            setAcademyForm({ ...academyForm, minimumAge: value });
+                                            // Clear error if value becomes valid
+                                            if (value && !isNaN(parseInt(value)) && parseInt(value) >= 3) {
+                                                if (fieldErrors.minimumAge) {
+                                                    setFieldErrors(prev => {
+                                                        const newErrors = { ...prev };
+                                                        delete newErrors.minimumAge;
+                                                        return newErrors;
+                                                    });
+                                                }
+                                            }
+                                        }}
+                                        placeholder="e.g., 3"
                                     />
+                                    {fieldErrors.minimumAge && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.minimumAge}
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
@@ -782,12 +2204,30 @@ export default function AcademiesPage() {
                                     </label>
                                     <input
                                         type="number"
-                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.maximumAge ? '#ef4444' : styles.input.borderColor }}
                                         value={academyForm.maximumAge}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, maximumAge: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Allow any number input, validation will check the value
+                                            setAcademyForm({ ...academyForm, maximumAge: value });
+                                            // Clear error if value becomes valid
+                                            if (value && !isNaN(parseInt(value)) && parseInt(value) <= 18) {
+                                                if (fieldErrors.maximumAge) {
+                                                    setFieldErrors(prev => {
+                                                        const newErrors = { ...prev };
+                                                        delete newErrors.maximumAge;
+                                                        return newErrors;
+                                                    });
+                                                }
+                                            }
+                                        }}
                                         placeholder="e.g., 18"
-                                        min="0"
                                     />
+                                    {fieldErrors.maximumAge && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.maximumAge}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -903,67 +2343,242 @@ export default function AcademiesPage() {
 
                     {/* Location Tab */}
                     {activeTab === 'location' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                            {/* Search Location */}
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Address Line One
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                    Search Location <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    style={styles.input}
-                                    value={academyForm.addressLineOne}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, addressLineOne: e.target.value })}
-                                    placeholder="Enter address line one"
-                                />
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ position: 'relative', flex: 1 }}>
+                                        <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                        <input
+                                            type="text"
+                                            style={{ ...styles.input, paddingLeft: '40px', fontFamily: navFontFamily }}
+                                            value={academyForm.searchLocation}
+                                            onChange={(e) => setAcademyForm({ ...academyForm, searchLocation: e.target.value })}
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleSearchLocation();
+                                                }
+                                            }}
+                                            placeholder="Search for a location..."
+                                        />
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Map Location */}
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Address Line Two
-                                </label>
-                                <input
-                                    type="text"
-                                    style={styles.input}
-                                    value={academyForm.addressLineTwo}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, addressLineTwo: e.target.value })}
-                                    placeholder="Enter address line two"
-                                />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
-                                <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                        State
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                    <label style={{ display: 'block', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Map Location
                                     </label>
-                                    <input
-                                        type="text"
-                                        style={styles.input}
+                                    <button
+                                        type="button"
+                                        onClick={handleUseCurrentLocation}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '8px 16px',
+                                            backgroundColor: '#023B84',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            fontFamily: navFontFamily,
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#022d6b'}
+                                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#023B84'}
+                                    >
+                                        <Navigation size={16} />
+                                        Use Current Location
+                                    </button>
+                                </div>
+                                <div
+                                    ref={mapContainerRef}
+                                    style={{
+                                        width: '100%',
+                                        height: '400px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        overflow: 'hidden'
+                                    }}
+                                />
+                                <p style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', fontFamily: navFontFamily }}>
+                                    Click on the map or drag the marker to set location
+                                </p>
+                            </div>
+
+                            {/* House No/Building Name */}
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                    <MapPin size={16} color="#64748b" />
+                                    House No/Building Name
+                                </label>
+                                <input
+                                    type="text"
+                                    style={{ ...styles.input, fontFamily: navFontFamily }}
+                                    value={academyForm.houseNumber}
+                                    onChange={(e) => setAcademyForm({ ...academyForm, houseNumber: e.target.value })}
+                                    placeholder="Enter house number or building name"
+                                />
+                            </div>
+
+                            {/* Street Name / Area */}
+                            <div>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                    <MapPin size={16} color="#64748b" />
+                                    Street Name / Area <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.addressLineOne ? '#ef4444' : styles.input.borderColor }}
+                                    value={academyForm.streetName}
+                                    onChange={(e) => {
+                                        setAcademyForm({ ...academyForm, streetName: e.target.value, addressLineOne: e.target.value });
+                                        if (fieldErrors.addressLineOne) {
+                                            setFieldErrors(prev => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors.addressLineOne;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
+                                    placeholder="Enter street name or area"
+                                />
+                                {fieldErrors.addressLineOne && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.addressLineOne}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* State and City */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        State <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <select
+                                        style={{ ...styles.select, fontFamily: navFontFamily, borderColor: fieldErrors.state ? '#ef4444' : styles.select.borderColor }}
                                         value={academyForm.state}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, state: e.target.value })}
-                                        placeholder="Enter state"
-                                    />
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, state: e.target.value, city: '' });
+                                            if (fieldErrors.state) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.state;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select state</option>
+                                        {indianStates.map((state) => (
+                                            <option key={state} value={state}>
+                                                {state}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {fieldErrors.state && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.state}
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                        City
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        City <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
-                                    <input
-                                        type="text"
-                                        style={styles.input}
+                                    <select
+                                        style={{ ...styles.select, fontFamily: navFontFamily, borderColor: fieldErrors.city ? '#ef4444' : styles.select.borderColor }}
                                         value={academyForm.city}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, city: e.target.value })}
-                                        placeholder="Enter city"
-                                    />
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, city: e.target.value });
+                                            if (fieldErrors.city) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.city;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        disabled={!academyForm.state}
+                                    >
+                                        <option value="">{academyForm.state ? 'Select city' : 'Select state first'}</option>
+                                        {academyForm.state && indianCities[academyForm.state] && indianCities[academyForm.state].map((city) => (
+                                            <option key={city} value={city}>
+                                                {city}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {fieldErrors.city && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.city}
+                                        </div>
+                                    )}
                                 </div>
+                            </div>
+
+                            {/* Pincode */}
+                            <div>
+                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                    Pincode <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.pincode ? '#ef4444' : styles.input.borderColor }}
+                                    value={academyForm.pincode}
+                                    onChange={(e) => {
+                                        setAcademyForm({ ...academyForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) });
+                                        if (fieldErrors.pincode) {
+                                            setFieldErrors(prev => {
+                                                const newErrors = { ...prev };
+                                                delete newErrors.pincode;
+                                                return newErrors;
+                                            });
+                                        }
+                                    }}
+                                    placeholder="Enter 6-digit pincode"
+                                    maxLength={6}
+                                />
+                                {fieldErrors.pincode && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.pincode}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Latitude and Longitude */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
-                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                        Pincode
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Latitude <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <input
                                         type="text"
-                                        style={styles.input}
-                                        value={academyForm.pincode}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                                        placeholder="Enter pincode"
-                                        maxLength={6}
+                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        value={academyForm.latitude}
+                                        onChange={(e) => setAcademyForm({ ...academyForm, latitude: e.target.value })}
+                                        placeholder="Latitude"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Longitude <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        value={academyForm.longitude}
+                                        onChange={(e) => setAcademyForm({ ...academyForm, longitude: e.target.value })}
+                                        placeholder="Longitude"
                                     />
                                 </div>
                             </div>
@@ -972,58 +2587,621 @@ export default function AcademiesPage() {
 
                     {/* Sports Tab */}
                     {activeTab === 'sports' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                             <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Select Sports (Multiple)
+                                <label style={{ display: 'block', marginBottom: '12px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                    Select Sports <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
-                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', minHeight: '60px', maxHeight: '200px', overflowY: 'auto' }}>
+                                
+                                {/* Search Bar */}
+                                <div style={{ position: 'relative', marginBottom: '20px' }}>
+                                    <Search 
+                                        size={18} 
+                                        color="#94a3b8" 
+                                        style={{ 
+                                            position: 'absolute', 
+                                            left: '12px', 
+                                            top: '50%', 
+                                            transform: 'translateY(-50%)', 
+                                            pointerEvents: 'none' 
+                                        }} 
+                                    />
+                                    <input
+                                        type="text"
+                                        style={{ 
+                                            ...styles.input, 
+                                            paddingLeft: '40px', 
+                                            fontFamily: navFontFamily,
+                                            width: '100%'
+                                        }}
+                                        value={sportSearchTerm}
+                                        onChange={(e) => setSportSearchTerm(e.target.value)}
+                                        placeholder="Search sports..."
+                                    />
+                                </div>
+
+                                {/* Sports Grid */}
+                                <div style={{ 
+                                    display: 'grid', 
+                                    gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', 
+                                    gap: '16px',
+                                    maxHeight: '500px',
+                                    overflowY: 'auto',
+                                    padding: '4px'
+                                }}>
                                     {sports && sports.length > 0 ? (
-                                        sports.map((sport) => (
-                                            <label
-                                                key={sport.id}
-                                                style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '6px',
-                                                    padding: '8px 14px',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #e2e8f0',
-                                                    cursor: 'pointer',
-                                                    backgroundColor: academyForm.selectedSports.includes(sport.id) ? '#023B84' : '#fff',
-                                                    color: academyForm.selectedSports.includes(sport.id) ? '#fff' : '#0f172a',
-                                                    fontSize: '14px',
-                                                    fontWeight: '500',
-                                                    transition: 'all 0.2s ease'
-                                                }}
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={academyForm.selectedSports.includes(sport.id)}
-                                                    onChange={() => handleSportToggle(sport.id)}
-                                                    style={{ cursor: 'pointer', width: '16px', height: '16px' }}
-                                                />
-                                                {sport.name}
-                                            </label>
-                                        ))
+                                        sports
+                                            .filter(sport => 
+                                                sport.name.toLowerCase().includes(sportSearchTerm.toLowerCase())
+                                            )
+                                            .map((sport) => {
+                                                const isSelected = academyForm.selectedSports.includes(sport.id);
+                                                return (
+                                                    <div
+                                                        key={sport.id}
+                                                        onClick={() => handleSportToggle(sport.id)}
+                                                        style={{
+                                                            display: 'flex',
+                                                            flexDirection: 'column',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            padding: '16px 12px',
+                                                            borderRadius: '8px',
+                                                            border: `1px solid ${isSelected ? '#023B84' : '#e2e8f0'}`,
+                                                            backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            position: 'relative',
+                                                            minHeight: '120px'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            if (!isSelected) {
+                                                                e.currentTarget.style.borderColor = '#023B84';
+                                                                e.currentTarget.style.backgroundColor = '#f8fafc';
+                                                            }
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            if (!isSelected) {
+                                                                e.currentTarget.style.borderColor = '#e2e8f0';
+                                                                e.currentTarget.style.backgroundColor = '#ffffff';
+                                                            }
+                                                        }}
+                                                    >
+                                                        {/* Checkbox indicator */}
+                                                        {isSelected && (
+                                                            <div style={{
+                                                                position: 'absolute',
+                                                                top: '8px',
+                                                                right: '8px',
+                                                                width: '20px',
+                                                                height: '20px',
+                                                                borderRadius: '4px',
+                                                                backgroundColor: '#023B84',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'center',
+                                                                color: '#ffffff',
+                                                                fontSize: '12px',
+                                                                fontWeight: 'bold'
+                                                            }}>
+                                                                ✓
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Sport Icon in Square */}
+                                                        <div style={{
+                                                            width: '64px',
+                                                            height: '64px',
+                                                            borderRadius: '8px',
+                                                            backgroundColor: isSelected ? '#023B84' : '#f1f5f9',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            fontSize: '32px',
+                                                            marginBottom: '12px',
+                                                            border: `1px solid ${isSelected ? '#023B84' : '#e2e8f0'}`,
+                                                            transition: 'all 0.2s ease'
+                                                        }}>
+                                                            {sport.icon || sport.image ? (
+                                                                sport.image ? (
+                                                                    <img 
+                                                                        src={sport.image} 
+                                                                        alt={sport.name}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100%',
+                                                                            objectFit: 'cover',
+                                                                            borderRadius: '8px'
+                                                                        }}
+                                                                    />
+                                                                ) : (
+                                                                    <span style={{ fontSize: '32px' }}>{sport.icon}</span>
+                                                                )
+                                                            ) : (
+                                                                <span style={{ fontSize: '32px', color: isSelected ? '#ffffff' : '#64748b' }}>⚽</span>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        {/* Sport Name */}
+                                                        <span style={{
+                                                            fontSize: '13px',
+                                                            fontWeight: '500',
+                                                            color: isSelected ? '#023B84' : '#0f172a',
+                                                            textAlign: 'center',
+                                                            fontFamily: navFontFamily
+                                                        }}>
+                                                            {sport.name}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })
                                     ) : (
-                                        <span style={{ color: '#64748b', fontSize: '14px' }}>No sports available</span>
+                                        <div style={{ 
+                                            gridColumn: '1 / -1', 
+                                            textAlign: 'center', 
+                                            padding: '40px',
+                                            color: '#64748b',
+                                            fontSize: '14px',
+                                            fontFamily: navFontFamily
+                                        }}>
+                                            No sports available
+                                        </div>
                                     )}
                                 </div>
+                                {fieldErrors.selectedSports && (
+                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '8px', fontFamily: navFontFamily }}>
+                                        {fieldErrors.selectedSports}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
 
                     {/* Media Tab */}
                     {activeTab === 'media' && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Media Files
-                                </label>
-                                <div style={{ padding: '20px', border: '1px dashed #e2e8f0', borderRadius: '8px', textAlign: 'center', color: '#64748b' }}>
-                                    Media upload functionality can be added here
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                            {academyForm.selectedSports.length === 0 ? (
+                                <div style={{ 
+                                    padding: '40px', 
+                                    textAlign: 'center', 
+                                    color: '#64748b',
+                                    fontSize: '14px',
+                                    fontFamily: navFontFamily,
+                                    border: '1px dashed #e2e8f0',
+                                    borderRadius: '8px'
+                                }}>
+                                    Please select at least one sport in the Sports tab to add media
                                 </div>
+                            ) : (
+                                academyForm.selectedSports.map((sportId) => {
+                                    const sport = sports.find(s => s.id === sportId);
+                                    if (!sport) return null;
+                                    
+                                    const sportMedia = academyForm.mediaBySport[sportId] || {
+                                        description: '',
+                                        images: [],
+                                        videos: []
+                                    };
+                                    
+                                    return (
+                                        <div key={sportId} style={{ 
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '12px',
+                                            padding: '24px',
+                                            backgroundColor: '#ffffff'
+                                        }}>
+                                            <h3 style={{ 
+                                                fontSize: '18px', 
+                                                fontWeight: '700', 
+                                                color: '#0f172a',
+                                                fontFamily: navFontFamily,
+                                                marginBottom: '24px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px'
+                                            }}>
+                                                {sport.image ? (
+                                                    <img 
+                                                        src={sport.image} 
+                                                        alt={sport.name}
+                                                        style={{
+                                                            width: '32px',
+                                                            height: '32px',
+                                                            objectFit: 'cover',
+                                                            borderRadius: '6px',
+                                                            border: '1px solid #e2e8f0'
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <span style={{ fontSize: '24px' }}>{sport.icon || '🏆'}</span>
+                                                )}
+                                                {sport.name}
+                                            </h3>
+                                            
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                                {/* Description */}
+                                                <div>
+                                                    <label style={{ 
+                                                        display: 'block', 
+                                                        marginBottom: '8px', 
+                                                        fontSize: '14px', 
+                                                        fontWeight: '600', 
+                                                        color: '#0f172a',
+                                                        fontFamily: navFontFamily
+                                                    }}>
+                                                        Description <span style={{ color: '#ef4444' }}>*</span>
+                                                    </label>
+                                                    <textarea
+                                                        placeholder={`Enter description for ${sport.name} (minimum 5 characters)`}
+                                                        style={{ 
+                                                            ...styles.input, 
+                                                            fontFamily: navFontFamily,
+                                                            minHeight: '80px',
+                                                            resize: 'vertical'
+                                                        }}
+                                                        value={sportMedia.description}
+                                                        onChange={(e) => {
+                                                            setAcademyForm(prev => ({
+                                                                ...prev,
+                                                                mediaBySport: {
+                                                                    ...prev.mediaBySport,
+                                                                    [sportId]: {
+                                                                        ...prev.mediaBySport[sportId],
+                                                                        description: e.target.value
+                                                                    }
+                                                                }
+                                                            }));
+                                                        }}
+                                                    />
+                                                    <div style={{ 
+                                                        fontSize: '12px', 
+                                                        color: '#64748b', 
+                                                        marginTop: '4px',
+                                                        fontFamily: navFontFamily
+                                                    }}>
+                                                        Minimum 5 characters required. Describe the facilities, coaching approach, or special features for {sport.name}.
+                                                    </div>
+                                                </div>
+
+                                                {/* Images Upload */}
+                                                <div>
+                                                    <label style={{ 
+                                                        display: 'block', 
+                                                        marginBottom: '8px', 
+                                                        fontSize: '14px', 
+                                                        fontWeight: '600', 
+                                                        color: '#0f172a',
+                                                        fontFamily: navFontFamily
+                                                    }}>
+                                                        Images (Optional)
+                                                    </label>
+                                                    <div
+                                                        onClick={() => {
+                                                            setCurrentUploadContext({ sportId, type: 'images' });
+                                                            imagesInputRef.current?.click();
+                                                        }}
+                                                        style={{
+                                                            border: '2px dashed #e2e8f0',
+                                                            borderRadius: '8px',
+                                                            padding: '32px',
+                                                            textAlign: 'center',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            backgroundColor: '#ffffff'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.borderColor = '#023B84';
+                                                            e.currentTarget.style.backgroundColor = '#f0f9ff';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.borderColor = '#e2e8f0';
+                                                            e.currentTarget.style.backgroundColor = '#ffffff';
+                                                        }}
+                                                    >
+                                                        <input
+                                                            ref={imagesInputRef}
+                                                            type="file"
+                                                            accept="image/png,image/jpeg,image/jpg"
+                                                            multiple
+                                                            onChange={(e) => {
+                                                                if (currentUploadContext.sportId === sportId && currentUploadContext.type === 'images') {
+                                                                    handleFileUpload(e.target.files, 'images', sportId);
+                                                                }
+                                                                e.target.value = ''; // Reset input
+                                                            }}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                            <Upload size={32} color="#64748b" />
+                                                            <div style={{ 
+                                                                color: '#023B84', 
+                                                                fontWeight: '600',
+                                                                fontFamily: navFontFamily
+                                                            }}>
+                                                                Click to upload images
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: navFontFamily }}>
+                                                                PNG, JPG up to 5MB each
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {sportMedia.images && sportMedia.images.length > 0 && (
+                                                        <div style={{ 
+                                                            display: 'grid', 
+                                                            gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))', 
+                                                            gap: '12px', 
+                                                            marginTop: '16px' 
+                                                        }}>
+                                                            {sportMedia.images.map((img, index) => (
+                                                                <div key={index} style={{ position: 'relative' }}>
+                                                                    <img
+                                                                        src={img.preview}
+                                                                        alt={`Upload ${index + 1}`}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100px',
+                                                                            objectFit: 'cover',
+                                                                            borderRadius: '8px',
+                                                                            border: '1px solid #e2e8f0'
+                                                                        }}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleRemoveFile(index, 'images', sportId)}
+                                                                        style={{
+                                                                            position: 'absolute',
+                                                                            top: '4px',
+                                                                            right: '4px',
+                                                                            background: 'rgba(0, 0, 0, 0.6)',
+                                                                            border: 'none',
+                                                                            borderRadius: '4px',
+                                                                            width: '24px',
+                                                                            height: '24px',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            cursor: 'pointer',
+                                                                            color: '#ffffff'
+                                                                        }}
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Videos Upload */}
+                                                <div>
+                                                    <label style={{ 
+                                                        display: 'block', 
+                                                        marginBottom: '8px', 
+                                                        fontSize: '14px', 
+                                                        fontWeight: '600', 
+                                                        color: '#0f172a',
+                                                        fontFamily: navFontFamily
+                                                    }}>
+                                                        Videos (Optional)
+                                                    </label>
+                                                    <div
+                                                        onClick={() => {
+                                                            setCurrentUploadContext({ sportId, type: 'videos' });
+                                                            videosInputRef.current?.click();
+                                                        }}
+                                                        style={{
+                                                            border: '2px dashed #e2e8f0',
+                                                            borderRadius: '8px',
+                                                            padding: '32px',
+                                                            textAlign: 'center',
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            backgroundColor: '#ffffff'
+                                                        }}
+                                                        onMouseEnter={(e) => {
+                                                            e.currentTarget.style.borderColor = '#023B84';
+                                                            e.currentTarget.style.backgroundColor = '#f0f9ff';
+                                                        }}
+                                                        onMouseLeave={(e) => {
+                                                            e.currentTarget.style.borderColor = '#e2e8f0';
+                                                            e.currentTarget.style.backgroundColor = '#ffffff';
+                                                        }}
+                                                    >
+                                                        <input
+                                                            ref={videosInputRef}
+                                                            type="file"
+                                                            accept="video/mp4,video/quicktime,video/mov"
+                                                            multiple
+                                                            onChange={(e) => {
+                                                                if (currentUploadContext.sportId === sportId && currentUploadContext.type === 'videos') {
+                                                                    handleFileUpload(e.target.files, 'videos', sportId);
+                                                                }
+                                                                e.target.value = ''; // Reset input
+                                                            }}
+                                                            style={{ display: 'none' }}
+                                                        />
+                                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                                            <Upload size={32} color="#64748b" />
+                                                            <div style={{ 
+                                                                color: '#023B84', 
+                                                                fontWeight: '600',
+                                                                fontFamily: navFontFamily
+                                                            }}>
+                                                                Click to upload videos
+                                                            </div>
+                                                            <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: navFontFamily }}>
+                                                                MP4, MOV up to 50MB each (thumbnail will be auto-generated)
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {sportMedia.videos && sportMedia.videos.length > 0 && (
+                                                        <div style={{ 
+                                                            display: 'grid', 
+                                                            gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+                                                            gap: '12px', 
+                                                            marginTop: '16px' 
+                                                        }}>
+                                                            {sportMedia.videos.map((video, index) => (
+                                                                <div key={index} style={{ position: 'relative' }}>
+                                                                    <video
+                                                                        src={video.preview}
+                                                                        style={{
+                                                                            width: '100%',
+                                                                            height: '100px',
+                                                                            objectFit: 'cover',
+                                                                            borderRadius: '8px',
+                                                                            border: '1px solid #e2e8f0'
+                                                                        }}
+                                                                        controls={false}
+                                                                    />
+                                                                    <button
+                                                                        onClick={() => handleRemoveFile(index, 'videos', sportId)}
+                                                                        style={{
+                                                                            position: 'absolute',
+                                                                            top: '4px',
+                                                                            right: '4px',
+                                                                            background: 'rgba(0, 0, 0, 0.6)',
+                                                                            border: 'none',
+                                                                            borderRadius: '4px',
+                                                                            width: '24px',
+                                                                            height: '24px',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            justifyContent: 'center',
+                                                                            cursor: 'pointer',
+                                                                            color: '#ffffff'
+                                                                        }}
+                                                                    >
+                                                                        <X size={14} />
+                                                                    </button>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+
+                            {/* Documents Upload - Academy Level (appears once) */}
+                            <div style={{ 
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '24px',
+                                backgroundColor: '#ffffff'
+                            }}>
+                                <label style={{ 
+                                    display: 'block', 
+                                    marginBottom: '8px', 
+                                    fontSize: '14px', 
+                                    fontWeight: '600', 
+                                    color: '#0f172a',
+                                    fontFamily: navFontFamily
+                                }}>
+                                    Documents (License, Certificates)
+                                </label>
+                                <div
+                                    onClick={() => {
+                                        setCurrentUploadContext({ sportId: null, type: 'documents' });
+                                        documentsInputRef.current?.click();
+                                    }}
+                                    style={{
+                                        border: '2px dashed #e2e8f0',
+                                        borderRadius: '8px',
+                                        padding: '32px',
+                                        textAlign: 'center',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        backgroundColor: '#ffffff'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.borderColor = '#023B84';
+                                        e.currentTarget.style.backgroundColor = '#f0f9ff';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.borderColor = '#e2e8f0';
+                                        e.currentTarget.style.backgroundColor = '#ffffff';
+                                    }}
+                                >
+                                    <input
+                                        ref={documentsInputRef}
+                                        type="file"
+                                        accept="application/pdf,image/jpeg,image/jpg"
+                                        multiple
+                                        onChange={(e) => {
+                                            if (currentUploadContext.type === 'documents') {
+                                                handleFileUpload(e.target.files, 'documents');
+                                            }
+                                            e.target.value = ''; // Reset input
+                                        }}
+                                        style={{ display: 'none' }}
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                        <Upload size={32} color="#64748b" />
+                                        <div style={{ 
+                                            color: '#023B84', 
+                                            fontWeight: '600',
+                                            fontFamily: navFontFamily
+                                        }}>
+                                            Upload documents
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: '#94a3b8', fontFamily: navFontFamily }}>
+                                            PDF, JPG up to 10MB each
+                                        </div>
+                                    </div>
+                                </div>
+                                {academyForm.documents && academyForm.documents.length > 0 && (
+                                    <div style={{ 
+                                        display: 'flex', 
+                                        flexDirection: 'column', 
+                                        gap: '8px', 
+                                        marginTop: '16px' 
+                                    }}>
+                                        {academyForm.documents.map((doc, index) => (
+                                            <div 
+                                                key={index} 
+                                                style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    justifyContent: 'space-between',
+                                                    padding: '12px',
+                                                    border: '1px solid #e2e8f0',
+                                                    borderRadius: '8px',
+                                                    backgroundColor: '#f8fafc'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                    <FileText size={20} color="#64748b" />
+                                                    <span style={{ 
+                                                        fontSize: '14px', 
+                                                        color: '#0f172a',
+                                                        fontFamily: navFontFamily
+                                                    }}>
+                                                        {doc.name}
+                                                    </span>
+                                                </div>
+                                                <button
+                                                    onClick={() => handleRemoveFile(index, 'documents')}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        cursor: 'pointer',
+                                                        padding: '4px',
+                                                        borderRadius: '4px',
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center'
+                                                    }}
+                                                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                                                >
+                                                    <X size={16} color="#ef4444" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
@@ -1207,18 +3385,145 @@ export default function AcademiesPage() {
         );
     }
 
+    // StatsBar Component
+    const StatsBar = ({ styles, totalAcademies, activeAcademies }) => {
+        const stats = [
+            { label: 'Total Academy', value: totalAcademies, icon: Building2 },
+            { label: 'Active Academy', value: activeAcademies, icon: CheckCircle2 },
+        ];
+        return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
+                {stats.map((stat) => (
+                    <div key={stat.label} style={{
+                        background: '#fff',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '14px',
+                        padding: '14px 16px',
+                        boxShadow: '0 6px 18px rgba(15, 23, 42, 0.05)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px'
+                    }}>
+                        <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '10px',
+                            background: '#fff7ed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '18px'
+                        }}>
+                            {stat.icon ? <stat.icon size={18} color="#0f172a" /> : null}
+                        </div>
+                        <div>
+                            <div style={{ fontSize: '13px', color: '#64748b', fontFamily: navFontFamily }}>{stat.label}</div>
+                            <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', fontFamily: navFontFamily }}>{stat.value}</div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
     // List view (default)
     return (
         <div style={styles.mainContent}>
             {renderConfirmModal()}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h1 style={{ ...styles.title, fontFamily: navFontFamily }}>Academies Management</h1>
-                <button
-                    style={{ ...styles.button, fontFamily: navFontFamily }}
-                    onClick={handleAddAcademy}
-                >
-                    + Add Academy
-                </button>
+            <div style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <div>
+                    <h1 style={{
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        margin: 0,
+                        marginBottom: '4px',
+                        fontFamily: navFontFamily
+                    }}>
+                        Academies Management
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#64748b',
+                        margin: 0,
+                        fontFamily: navFontFamily
+                    }}>
+                        Manage academies and coaching centers
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={exportAcademiesToCSV}
+                        style={{
+                            background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '12px 20px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontFamily: navFontFamily,
+                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                        }}
+                    >
+                        <DownloadCloud size={18} />
+                        Export CSV
+                    </button>
+                    <button
+                        style={{
+                            background: 'linear-gradient(135deg, #023b84 0%, #023b84 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '12px 20px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontFamily: navFontFamily,
+                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onClick={handleAddAcademy}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                        }}
+                    >
+                        <Upload size={18} />
+                        + Add Academy
+                    </button>
+                </div>
             </div>
 
             {/* Filters / toggles */}
@@ -1236,8 +3541,8 @@ export default function AcademiesPage() {
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
                         <Search size={18} color="#94a3b8" />
-                        <input
-                            type="text"
+                <input
+                    type="text"
                             placeholder="Search..."
                             style={{
                                 border: 'none',
@@ -1246,9 +3551,12 @@ export default function AcademiesPage() {
                                 fontSize: '14px',
                                 color: '#0f172a',
                             }}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
+                    value={searchTerm}
+                    onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setCurrentPage(1); // Reset to first page when search changes
+                    }}
+                />
                     </div>
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {[
@@ -1302,16 +3610,111 @@ export default function AcademiesPage() {
                         })}
                     </div>
                 </div>
-                <div style={{ color: '#475569', fontSize: '13px' }}>
+                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: '#475569', fontFamily: navFontFamily, fontWeight: 500 }}>
+                            Filter by status:
+                        </label>
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => {
+                                setStatusFilter(e.target.value);
+                                setCurrentPage(1); // Reset to first page when filter changes
+                            }}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: '#fff',
+                                color: '#0f172a',
+                                fontSize: '13px',
+                                fontFamily: navFontFamily,
+                                cursor: 'pointer',
+                                outline: 'none',
+                                minWidth: '150px'
+                            }}
+                        >
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: '#475569', fontFamily: navFontFamily, fontWeight: 500 }}>
+                            Added By:
+                        </label>
+                        <select
+                            value={addedByFilter}
+                            onChange={(e) => {
+                                setAddedByFilter(e.target.value);
+                                setCurrentPage(1); // Reset to first page when filter changes
+                            }}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: '#fff',
+                                color: '#0f172a',
+                                fontSize: '13px',
+                                fontFamily: navFontFamily,
+                                cursor: 'pointer',
+                                outline: 'none',
+                                minWidth: '150px'
+                            }}
+                        >
+                            <option value="all">All</option>
+                            {uniqueAddedBy.map((addedBy) => (
+                                <option key={addedBy} value={addedBy}>{addedBy}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <label style={{ fontSize: '13px', color: '#475569', fontFamily: navFontFamily, fontWeight: 500 }}>
+                            Sports:
+                        </label>
+                        <select
+                            value={sportsFilter}
+                            onChange={(e) => {
+                                setSportsFilter(e.target.value);
+                                setCurrentPage(1); // Reset to first page when filter changes
+                            }}
+                            style={{
+                                padding: '8px 12px',
+                                borderRadius: '8px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: '#fff',
+                                color: '#0f172a',
+                                fontSize: '13px',
+                                fontFamily: navFontFamily,
+                                cursor: 'pointer',
+                                outline: 'none',
+                                minWidth: '150px'
+                            }}
+                        >
+                            <option value="all">All</option>
+                            {sports.map((sport) => (
+                                <option key={sport.id} value={sport.id.toString()}>{sport.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+                <div style={{ color: '#475569', fontSize: '13px', marginTop: '12px' }}>
                     Showing {filteredAcademies.length} of {academies.length} academies
                 </div>
             </div>
 
+            {/* Stats Bar */}
+            <StatsBar 
+                styles={styles}
+                totalAcademies={totalAcademies}
+                activeAcademies={activeAcademies}
+            />
+
             {viewMode === 'list' ? (
-                <div style={styles.card}>
-                    <table style={styles.table}>
-                        <thead>
-                            <tr>
+            <div style={styles.card}>
+                <table style={styles.table}>
+                    <thead>
+                        <tr>
                                 <th style={thCenter}>Sr. No.</th>
                                 <th style={thCenter}>Name</th>
                                 <th style={thCenter}>Email Id</th>
@@ -1321,9 +3724,9 @@ export default function AcademiesPage() {
                                 <th style={thCenter}>Create Date</th>
                                 <th style={thCenter}>Status</th>
                                 <th style={thCenter}>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                        </tr>
+                    </thead>
+                    <tbody>
                             {paginatedAcademies.map((academy, index) => (
                             <tr key={academy.id}>
                                 <td style={tdCenter}>{start + index + 1}</td>
@@ -1393,15 +3796,15 @@ export default function AcademiesPage() {
                                     </div>
                                 </td>
                             </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {filteredAcademies.length === 0 && (
-                        <div style={{ padding: '20px', textAlign: 'center', color: styles.subtitle.color }}>
-                            No academies found
-                        </div>
-                    )}
-                </div>
+                        ))}
+                    </tbody>
+                </table>
+                {filteredAcademies.length === 0 && (
+                    <div style={{ padding: '20px', textAlign: 'center', color: styles.subtitle.color }}>
+                        No academies found
+                    </div>
+                )}
+            </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '12px' }}>
                     {paginatedAcademies.map((academy, index) => (
@@ -1550,3 +3953,4 @@ export default function AcademiesPage() {
         </div>
     );
 }
+

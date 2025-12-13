@@ -2,11 +2,12 @@
 import React, { useState } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
-import { CalendarRange, Eye, DownloadCloud } from 'lucide-react';
+import { CalendarRange, Eye, DownloadCloud, Upload } from 'lucide-react';
 
 export default function BookingsPage() {
     const { bookings, setBookings, batches } = useAdmin();
     const styles = useTheme();
+    const navFontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
 
     const [filterStatus, setFilterStatus] = useState('All');
     const [searchTerm, setSearchTerm] = useState('');
@@ -53,9 +54,67 @@ export default function BookingsPage() {
     return (
         <div style={styles.mainContent}>
             {/* Header */}
-            <div style={{ marginBottom: '20px' }}>
-                <h1 style={styles.title}>Booking Management</h1>
-                <p style={{ color: '#64748b', fontSize: '14px' }}>Manage bookings, payments, and invoices</p>
+            <div style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <div>
+                    <h1 style={{
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        margin: 0,
+                        marginBottom: '4px',
+                        fontFamily: navFontFamily
+                    }}>
+                        Booking Management
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#64748b',
+                        margin: 0,
+                        fontFamily: navFontFamily
+                    }}>
+                        Manage bookings, payments, and invoices
+                    </p>
+                </div>
+                <button
+                    style={{
+                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '12px 20px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontFamily: navFontFamily,
+                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                    }}
+                >
+                    <Upload size={18} />
+                    Export
+                </button>
             </div>
 
             {/* Stats Cards */}
