@@ -1,10 +1,11 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
 import Modal from '@/components/Modal';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
+import { Phone, Mail, MapPin, CalendarDays, Pencil, Trash2, Users, UserCheck, GraduationCap, CheckCircle2, Search } from 'lucide-react';
 import { X, HelpCircle } from 'lucide-react';
 
 export default function UsersPage() {
@@ -48,7 +49,8 @@ export default function UsersPage() {
         if (!value) return '';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '';
-        return date.toLocaleDateString();
+        // Use a fixed locale/timezone to avoid server/client mismatch during hydration
+        return date.toLocaleDateString('en-GB', { timeZone: 'UTC' });
     };
 
     const toggleUserStatus = (id) => {
@@ -189,54 +191,47 @@ export default function UsersPage() {
         );
     };
 
-    const StatusToggle = ({ user }) => (
-        <div
-            onClick={() => toggleUserStatus(user.id)}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: user.isDeleted ? 'not-allowed' : 'pointer',
-                userSelect: 'none',
-                opacity: user.isDeleted ? 0.5 : 1
-            }}
-            title={user.isDeleted ? 'Deleted users cannot change status' : `Click to ${user.isActive ? 'deactivate' : 'activate'} user`}
-        >
+    const StatusToggle = ({ user }) => {
+        const isActive = user.isActive && !user.isDeleted;
+        const toggleStyle = useMemo(() => ({
+            width: '50px',
+            height: '20px',
+            borderRadius: '999px',
+            background: isActive ? '#023B84' : '#cbd5e1',
+            position: 'relative',
+            transition: 'all 0.2s ease',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+        }), [isActive]);
+        const thumbStyle = useMemo(() => ({
+            position: 'absolute',
+            top: '4px',
+            left: isActive ? '36px' : '3px',
+            width: '10px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#ffffff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+            transition: 'left 0.2s ease'
+        }), [isActive]);
+        const containerStyle = useMemo(() => ({
+            display: 'flex',
+            alignItems: 'center',
+            cursor: user.isDeleted ? 'not-allowed' : 'pointer',
+            userSelect: 'none',
+            opacity: user.isDeleted ? 0.5 : 1
+        }), [user.isDeleted]);
+        return (
             <div
-                style={{
-                    width: '50px',
-                    height: '22px',
-                    borderRadius: '999px',
-                    background: user.isActive && !user.isDeleted ? '#1d4ed8' : '#cbd5e1',
-                    position: 'relative',
-                    transition: 'all 0.2s ease',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
-                }}
+                onClick={() => toggleUserStatus(user.id)}
+                style={containerStyle}
+                title={user.isDeleted ? 'Deleted users cannot change status' : 'Toggle status'}
             >
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '4px',
-                        left: user.isActive && !user.isDeleted ? '28px' : '4px',
-                        width: '14px',
-                        height: '14px',
-                        borderRadius: '50%',
-                        background: '#ffffff',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-                        transition: 'left 0.2s ease'
-                    }}
-                />
+                <div style={toggleStyle}>
+                    <div style={thumbStyle} />
+                </div>
             </div>
-            <span style={{
-                color: user.isDeleted ? '#ef4444' : user.isActive ? '#1d4ed8' : '#64748b',
-                fontWeight: 700,
-                fontSize: '12px',
-                minWidth: '64px'
-            }}>
-                {user.isDeleted ? 'Deleted' : user.isActive ? 'Active' : 'Inactive'}
-            </span>
-        </div>
-    );
+        );
+    };
 
     return (
         <div style={styles.mainContent}>
@@ -275,14 +270,14 @@ export default function UsersPage() {
                         >
                             <X size={18} color="#0f172a" />
                         </button>
-                        <h3 style={{ margin: '0 0 12px 0', color: '#de0404', fontWeight: 700 }}>Are You Sure?</h3>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#f97316', fontWeight: 700 }}>Are You Sure?</h3>
                         <p style={{ color: '#242222', marginBottom: '20px' }}>
                             Do you want to change this status to <span style={{ color: '#f97316', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
                         </p>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button
                                 onClick={handleCancelStatus}
-                                style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
+                                style={{ ...styles.button, backgroundColor: '#f97316', color: '#ffffff' }}
                             >
                                 Cancel
                             </button>
@@ -290,7 +285,7 @@ export default function UsersPage() {
                                 onClick={handleConfirmStatus}
                                 style={{
                                     ...styles.buttonSuccess,
-                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    background: 'linear-gradient(135deg, #023B84 0%, #023B84 100%)',
                                     color: '#ffffff',
                                     border: 'none',
                                     borderRadius: '10px',
@@ -380,8 +375,8 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
             boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)'
         }}>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
-                    <span style={{ color: '#94a3b8' }}>🔍</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
+                    <Search size={18} color="#94a3b8" />
                     <input
                         type="text"
                         placeholder="Search..."
@@ -420,7 +415,7 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
                                     background: active
                                         ? (isGrid
                                             ? 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)'
-                                            : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)')
+                                            : 'linear-gradient(135deg, #023B84 0%, #023B84 100%)')
                                         : 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
                                     boxShadow: active ? '0 8px 18px rgba(0,0,0,0.12)' : '0 2px 6px rgba(0,0,0,0.06)',
                                     color: active ? '#fff' : '#475569'
@@ -504,10 +499,10 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
 
 function StatsBar({ styles, totalUsers, totalGuardians, totalStudents, activeUsers }) {
     const stats = [
-        { label: 'Total Users', value: totalUsers, icon: '👤' },
-        { label: 'Guardians', value: totalGuardians, icon: '🧑‍🤝‍🧑' },
-        { label: 'Students', value: totalStudents, icon: '🎓' },
-        { label: 'Active Users', value: activeUsers, icon: '✅' },
+        { label: 'Total Users', value: totalUsers, icon: Users },
+        { label: 'Guardians', value: totalGuardians, icon: UserCheck },
+        { label: 'Students', value: totalStudents, icon: GraduationCap },
+        { label: 'Active Users', value: activeUsers, icon: CheckCircle2 },
     ];
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
@@ -531,7 +526,9 @@ function StatsBar({ styles, totalUsers, totalGuardians, totalStudents, activeUse
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '18px'
-                    }}>{stat.icon}</div>
+                    }}>
+                        {stat.icon ? <stat.icon size={18} color="#0f172a" /> : null}
+                    </div>
                     <div>
                         <div style={{ fontSize: '13px', color: '#64748b' }}>{stat.label}</div>
                         <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>{stat.value}</div>
@@ -589,12 +586,12 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                             </span>
                                             <StatusPill user={user} />
                                         </div>
-                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '13px', color: '#475569' }}>
-                                            <span>📞 {user.mobile || '-'}</span>
-                                            <span>📧 {user.email}</span>
-                                            <span>🎂 {formatDate(user.dob) || '-'}</span>
-                                            <span>📍 {cityState || '—'}</span>
-                                        </div>
+                                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '13px', color: '#475569' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> {user.mobile || '-'}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> {user.email}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><CalendarDays size={14} /> {formatDate(user.dob) || '-'}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> {cityState || '—'}</span>
+                                    </div>
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
@@ -603,15 +600,17 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                         style={{ ...styles.button, padding: '6px 10px', fontSize: '12px' }}
                                         onClick={() => alert(`Edit user: ${fullName}`)}
                                         disabled={user.isDeleted}
+                                        title="Edit"
                                     >
-                                        ✏️ Edit
+                                        <Pencil size={14} color="#ffffff" />
                                     </button>
                                     <button
                                         style={{ ...styles.buttonDanger, padding: '6px 10px', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                                         onClick={() => handleDeleteUser(user.id)}
                                         disabled={user.isDeleted}
+                                        title="Delete"
                                     >
-                                        🗑️ Delete
+                                        <Trash2 size={14} color="#ffffff" />
                                     </button>
                                 </div>
                             </div>
@@ -681,10 +680,10 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                     </span>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', rowGap: '6px', columnGap: '10px', fontSize: '13px', color: '#475569' }}>
-                                    <span>📞 {user.mobile || '-'}</span>
-                                    <span>📧 {user.email}</span>
-                                    <span>📍 {cityState || '—'}</span>
-                                    <span>🎂 {formatDate(user.dob) || '-'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> {user.mobile || '-'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> {user.email}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> {cityState || '—'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><CalendarDays size={14} /> {formatDate(user.dob) || '-'}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#0f172a' }}>
                                     <div style={{ display: 'flex', gap: '16px' }}>
@@ -698,14 +697,14 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                             onClick={() => alert(`Edit user: ${fullName}`)}
                                             disabled={user.isDeleted}
                                         >
-                                            ✏️
+                                            <Pencil size={14} color="#ffffff" />
                                         </button>
                                         <button
                                             style={{ ...styles.buttonDanger, padding: '6px 10px', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                                             onClick={() => handleDeleteUser(user.id)}
                                             disabled={user.isDeleted}
                                         >
-                                            🗑️
+                                            <Trash2 size={14} color="#ffffff" />
                                         </button>
                                     </div>
                                 </div>

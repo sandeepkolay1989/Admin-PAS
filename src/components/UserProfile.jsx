@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { Camera, Lock, Sun, Moon, LogOut } from 'lucide-react';
 
 export default function UserProfile({ profile, onUpdateProfile, onLogout, onChangePassword }) {
     const styles = useTheme();
@@ -58,7 +59,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>📷</span> Add/Change Logo
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Camera size={16} />
+                        </span> Add/Change Logo
                     </div>
 
                     <input
@@ -75,7 +78,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>🔒</span> Change Password
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Lock size={16} />
+                        </span> Change Password
                     </div>
 
                     <div
@@ -84,7 +89,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>{isDarkMode ? '☀️' : '🌙'}</span> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                        </span> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                     </div>
 
                     <div
@@ -93,7 +100,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>🚪</span> Logout
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <LogOut size={16} />
+                        </span> Logout
                     </div>
                 </div>
             )}
