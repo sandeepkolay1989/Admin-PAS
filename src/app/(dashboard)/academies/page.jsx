@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Pencil, Trash2, X, HelpCircle, Search, Upload, MapPin, Navigation, FileText, Image as ImageIcon, Video, Building2, CheckCircle2, DownloadCloud } from 'lucide-react';
@@ -13,14 +13,17 @@ export default function AcademiesPage() {
     const [addedByFilter, setAddedByFilter] = useState('all'); // all, or specific addedBy value
     const [sportsFilter, setSportsFilter] = useState('all'); // all, or specific sport ID
     const [confirmModal, setConfirmModal] = useState(null);
-    const [viewMode, setViewMode] = useState('list');
+    const [viewMode, setViewMode] = useState('list'); // list or detail or form
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+    const [hoveredRowId, setHoveredRowId] = useState(null);
+    const [returnToDetail, setReturnToDetail] = useState(null);
     const [showAcademyModal, setShowAcademyModal] = useState(false);
     const formJustOpenedRef = useRef(false);
     const [fieldErrors, setFieldErrors] = useState({});
     const [editingAcademy, setEditingAcademy] = useState(null);
     const [activeTab, setActiveTab] = useState('basic');
+    const [sportsOptionsHydrated, setSportsOptionsHydrated] = useState(false);
     const [academyForm, setAcademyForm] = useState({
         centerName: '',
         phoneNumber: '',
@@ -67,6 +70,17 @@ export default function AcademiesPage() {
         createDate: new Date().toISOString().split('T')[0],
         status: 'active'
     });
+    const [logoCropper, setLogoCropper] = useState({
+        isOpen: false,
+        imageSrc: '',
+        imgWidth: 0,
+        imgHeight: 0,
+        baseScale: 1,
+        scale: 1.1,
+        pos: { x: 0, y: 0 },
+        isDragging: false,
+        dragStart: null
+    });
     const [ifscError, setIfscError] = useState('');
     const [sportSearchTerm, setSportSearchTerm] = useState('');
     const [currentUploadContext, setCurrentUploadContext] = useState({ sportId: null, type: null });
@@ -80,6 +94,8 @@ export default function AcademiesPage() {
     const imagesInputRef = useRef(null);
     const videosInputRef = useRef(null);
     const documentsInputRef = useRef(null);
+    const cropImageRef = useRef(null);
+    const [detailAcademy, setDetailAcademy] = useState(null);
 
     // Indian States and Cities data
     const indianStates = [
@@ -133,6 +149,20 @@ export default function AcademiesPage() {
         'Puducherry': ['Puducherry', 'Karaikal', 'Mahe', 'Yanam']
     };
 
+    // Sorted states and cities for dropdowns
+    const sortedStates = useMemo(() => [...indianStates].sort((a, b) => a.localeCompare(b)), []);
+    const sortedCitiesByState = useMemo(() => {
+        const result = {};
+        Object.entries(indianCities).forEach(([state, cities]) => {
+            result[state] = [...cities].sort((a, b) => a.localeCompare(b));
+        });
+        return result;
+    }, []);
+
+    useEffect(() => {
+        setSportsOptionsHydrated(true);
+    }, []);
+
     const tabs = [
         { id: 'basic', label: 'Basic' },
         { id: 'location', label: 'Location' },
@@ -141,6 +171,14 @@ export default function AcademiesPage() {
         { id: 'timings', label: 'Timings' },
         { id: 'banking', label: 'Banking' }
     ];
+
+    const selectedSportsSafe = useMemo(() => {
+        return (academyForm.selectedSports || []).filter((s) => {
+            if (s === null || s === undefined) return false;
+            const str = String(s).trim();
+            return str.length > 0;
+        });
+    }, [academyForm.selectedSports]);
 
     // Initialize media for selected sports
     useEffect(() => {
@@ -265,6 +303,16 @@ export default function AcademiesPage() {
         if (window.confirm('Are you sure you want to delete this academy?')) {
             setAcademies(academies.filter(a => a.id !== id));
         }
+    };
+
+    const openDetailDrawer = (academy) => {
+        setDetailAcademy(academy);
+        setViewMode('detail');
+    };
+
+    const closeDetailDrawer = () => {
+        setDetailAcademy(null);
+        setViewMode('list');
     };
 
     const validateIFSC = (ifsc) => {
@@ -529,35 +577,159 @@ export default function AcademiesPage() {
         }
     };
 
+    const CROP_BOX_SIZE = 320; // visual crop box
+    const CROP_CANVAS_SIZE = 600; // exported square size before compression
+
+    const clampCropPosition = (pos, imgWidth, imgHeight, baseScale, scale) => {
+        const finalScale = baseScale * scale;
+        const drawW = imgWidth * finalScale;
+        const drawH = imgHeight * finalScale;
+        const maxX = Math.max(0, (drawW - CROP_BOX_SIZE) / 2);
+        const maxY = Math.max(0, (drawH - CROP_BOX_SIZE) / 2);
+        return {
+            x: Math.max(-maxX, Math.min(maxX, pos.x)),
+            y: Math.max(-maxY, Math.min(maxY, pos.y))
+        };
+    };
+
+    const openLogoCropper = (dataUrl, file) => {
+        const img = new Image();
+        img.onload = () => {
+            cropImageRef.current = img;
+            const minDim = Math.min(img.width, img.height);
+            const baseScale = CROP_BOX_SIZE / minDim;
+            setLogoCropper({
+                isOpen: true,
+                imageSrc: dataUrl,
+                imgWidth: img.width,
+                imgHeight: img.height,
+                baseScale,
+                scale: 1.1,
+                pos: { x: 0, y: 0 },
+                isDragging: false,
+                dragStart: null
+            });
+        };
+        img.src = dataUrl;
+    };
+
     const handleLogoUpload = (e) => {
         const file = e.target.files[0];
-        if (file) {
-            if (file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png') {
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File size should be less than 5MB');
-                    return;
-                }
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setAcademyForm({
-                        ...academyForm,
-                        logo: file,
-                        logoPreview: reader.result
-                    });
-                    // Clear logo error when logo is uploaded
-                    if (fieldErrors.logo) {
-                        setFieldErrors(prev => {
-                            const newErrors = { ...prev };
-                            delete newErrors.logo;
-                            return newErrors;
-                        });
-                    }
-                };
-                reader.readAsDataURL(file);
-            } else {
-                alert('Please upload only JPG or PNG files');
-            }
+        if (!file) return;
+
+        if (!(file.type === 'image/jpeg' || file.type === 'image/jpg' || file.type === 'image/png')) {
+            setFieldErrors(prev => ({ ...prev, logo: 'Please upload only JPG or PNG files' }));
+            return;
         }
+
+        // Hard cap at 50MB for upload
+        if (file.size > 50 * 1024 * 1024) {
+            setFieldErrors(prev => ({ ...prev, logo: 'File size should be 50MB or less' }));
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            openLogoCropper(reader.result, file);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const closeLogoCropper = () => {
+        setLogoCropper(prev => ({ ...prev, isOpen: false }));
+    };
+
+    const handleCropMouseDown = (e) => {
+        if (!logoCropper.isOpen) return;
+        setLogoCropper(prev => ({
+            ...prev,
+            isDragging: true,
+            dragStart: { x: e.clientX, y: e.clientY }
+        }));
+    };
+
+    const handleCropMouseMove = (e) => {
+        if (!logoCropper.isOpen || !logoCropper.isDragging) return;
+        const deltaX = e.clientX - logoCropper.dragStart.x;
+        const deltaY = e.clientY - logoCropper.dragStart.y;
+        const nextPos = { x: logoCropper.pos.x + deltaX, y: logoCropper.pos.y + deltaY };
+        const clamped = clampCropPosition(nextPos, logoCropper.imgWidth, logoCropper.imgHeight, logoCropper.baseScale, logoCropper.scale);
+        setLogoCropper(prev => ({
+            ...prev,
+            pos: clamped,
+            dragStart: { x: e.clientX, y: e.clientY }
+        }));
+    };
+
+    const handleCropMouseUp = () => {
+        if (!logoCropper.isDragging) return;
+        setLogoCropper(prev => ({ ...prev, isDragging: false, dragStart: null }));
+    };
+
+    const handleCropZoom = (e) => {
+        const nextScale = parseFloat(e.target.value);
+        const clampedPos = clampCropPosition(logoCropper.pos, logoCropper.imgWidth, logoCropper.imgHeight, logoCropper.baseScale, nextScale);
+        setLogoCropper(prev => ({ ...prev, scale: nextScale, pos: clampedPos }));
+    };
+
+    const generateCroppedLogo = async () => {
+        if (!cropImageRef.current) return null;
+        const img = cropImageRef.current;
+        const canvas = document.createElement('canvas');
+        canvas.width = CROP_CANVAS_SIZE;
+        canvas.height = CROP_CANVAS_SIZE;
+        const ctx = canvas.getContext('2d');
+        const viewToCanvasScale = CROP_CANVAS_SIZE / CROP_BOX_SIZE;
+        const finalScale = logoCropper.baseScale * logoCropper.scale;
+        const drawW = img.width * finalScale * viewToCanvasScale;
+        const drawH = img.height * finalScale * viewToCanvasScale;
+        const posX = (CROP_BOX_SIZE / 2 + logoCropper.pos.x) * viewToCanvasScale - drawW / 2;
+        const posY = (CROP_BOX_SIZE / 2 + logoCropper.pos.y) * viewToCanvasScale - drawH / 2;
+        ctx.clearRect(0, 0, CROP_CANVAS_SIZE, CROP_CANVAS_SIZE);
+        ctx.drawImage(img, posX, posY, drawW, drawH);
+
+        const getBlobWithQuality = (quality) => new Promise(resolve => canvas.toBlob(blob => resolve(blob), 'image/jpeg', quality));
+
+        let quality = 0.92;
+        let blob = await getBlobWithQuality(quality);
+        while (blob && blob.size > 5 * 1024 * 1024 && quality > 0.5) {
+            quality -= 0.1;
+            blob = await getBlobWithQuality(quality);
+        }
+
+        if (!blob) return null;
+
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const dataUrl = reader.result;
+                const file = new File([blob], 'logo.jpg', { type: 'image/jpeg' });
+                resolve({ dataUrl, file });
+            };
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    const confirmLogoCrop = async () => {
+        const cropped = await generateCroppedLogo();
+        if (!cropped) return;
+
+        setAcademyForm({
+            ...academyForm,
+            logo: cropped.file,
+            logoPreview: cropped.dataUrl
+        });
+
+        // Clear logo error when logo is uploaded
+        if (fieldErrors.logo) {
+            setFieldErrors(prev => {
+                const newErrors = { ...prev };
+                delete newErrors.logo;
+                return newErrors;
+            });
+        }
+
+        closeLogoCropper();
     };
 
     const handleAddRule = () => {
@@ -808,7 +980,8 @@ export default function AcademiesPage() {
         }, 100);
     };
 
-    const handleEditAcademy = (academy) => {
+    const handleEditAcademy = (academy, fromDetail = false) => {
+        setReturnToDetail(fromDetail ? academy : null);
         formJustOpenedRef.current = true;
         setEditingAcademy(academy);
         setActiveTab('basic');
@@ -951,6 +1124,14 @@ export default function AcademiesPage() {
             createDate: new Date().toISOString().split('T')[0],
             status: 'active'
         });
+        if (returnToDetail) {
+            setDetailAcademy(returnToDetail);
+            setViewMode('detail');
+            setReturnToDetail(null);
+        } else {
+            setDetailAcademy(null);
+            setViewMode('list');
+        }
         // Clean up map
         if (marker) {
             marker.setMap(null);
@@ -1132,6 +1313,109 @@ export default function AcademiesPage() {
         document.body.removeChild(link);
     };
 
+    // Individual field validation functions for onBlur
+    const validatePhoneNumber = () => {
+        const errors = {};
+        if (!academyForm.phoneNumber || !academyForm.phoneNumber.trim()) {
+            errors.phoneNumber = 'Mobile Number is required';
+        } else {
+            const phoneNumber = academyForm.phoneNumber.trim();
+            if (phoneNumber.length !== 10) {
+                errors.phoneNumber = 'Mobile Number must be exactly 10 digits';
+            } else if (!/^[6789]/.test(phoneNumber)) {
+                errors.phoneNumber = 'Mobile Number must start with 6, 7, 8, or 9';
+            }
+        }
+        
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            if (errors.phoneNumber) {
+                newErrors.phoneNumber = errors.phoneNumber;
+            } else {
+                delete newErrors.phoneNumber;
+            }
+            return newErrors;
+        });
+    };
+
+    const validateEmail = () => {
+        const errors = {};
+        if (!academyForm.email || !academyForm.email.trim()) {
+            errors.email = 'Email is required';
+        } else {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(academyForm.email.trim())) {
+                errors.email = 'Please enter a valid email address (e.g., abc@example.com)';
+            }
+        }
+        
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            if (errors.email) {
+                newErrors.email = errors.email;
+            } else {
+                delete newErrors.email;
+            }
+            return newErrors;
+        });
+    };
+
+    const validateMinimumAge = () => {
+        const errors = {};
+        if (!academyForm.minimumAge || !academyForm.minimumAge.trim()) {
+            errors.minimumAge = 'Minimum Age is required';
+        } else {
+            const minAge = parseInt(academyForm.minimumAge.trim());
+            if (isNaN(minAge) || minAge < 3) {
+                errors.minimumAge = 'Minimum Age must be 3 or above';
+            } else if (minAge > 18) {
+                errors.minimumAge = 'Minimum Age must be 18 or below';
+            }
+        }
+        
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            if (errors.minimumAge) {
+                newErrors.minimumAge = errors.minimumAge;
+            } else {
+                delete newErrors.minimumAge;
+            }
+            return newErrors;
+        });
+    };
+
+    const validateMaximumAge = () => {
+        const errors = {};
+        if (!academyForm.maximumAge || !academyForm.maximumAge.trim()) {
+            errors.maximumAge = 'Maximum Age is required';
+        } else {
+            const maxAge = parseInt(academyForm.maximumAge.trim());
+            if (isNaN(maxAge) || maxAge > 18) {
+                errors.maximumAge = 'Maximum Age must be 18 or below';
+            } else if (maxAge < 3) {
+                errors.maximumAge = 'Maximum Age must be 3 or above';
+            } else {
+                // Check if maximum age is greater than minimum age
+                if (academyForm.minimumAge && academyForm.minimumAge.trim()) {
+                    const minAge = parseInt(academyForm.minimumAge.trim());
+                    if (!isNaN(minAge) && maxAge <= minAge) {
+                        errors.maximumAge = 'Maximum Age must be greater than Minimum Age';
+                    }
+                }
+            }
+        }
+        
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            if (errors.maximumAge) {
+                newErrors.maximumAge = errors.maximumAge;
+            } else {
+                delete newErrors.maximumAge;
+            }
+            return newErrors;
+        });
+    };
+
     // Validation functions for each tab
     const validateBasicTab = () => {
         const errors = {};
@@ -1247,8 +1531,12 @@ export default function AcademiesPage() {
             errors.city = 'City is required';
             isValid = false;
         }
-        if (!academyForm.pincode || !academyForm.pincode.trim()) {
+        const pin = academyForm.pincode ? academyForm.pincode.trim() : '';
+        if (!pin) {
             errors.pincode = 'Pincode is required';
+            isValid = false;
+        } else if (!/^\d{6}$/.test(pin)) {
+            errors.pincode = 'Pincode must be exactly 6 digits';
             isValid = false;
         }
 
@@ -1270,7 +1558,7 @@ export default function AcademiesPage() {
         const errors = {};
         let isValid = true;
 
-        if (!academyForm.selectedSports || academyForm.selectedSports.length === 0) {
+        if (!selectedSportsSafe || selectedSportsSafe.length === 0) {
             errors.selectedSports = 'At least one Sport is required';
             isValid = false;
         }
@@ -1290,15 +1578,15 @@ export default function AcademiesPage() {
     };
 
     const validateMediaTab = () => {
-        const errors = {};
+        const mediaDescErrors = {};
         let isValid = true;
 
-        if (academyForm.selectedSports.length > 0) {
-            for (const sportId of academyForm.selectedSports) {
+        if (selectedSportsSafe.length > 0) {
+            for (const sportId of selectedSportsSafe) {
                 const sportMedia = academyForm.mediaBySport[sportId];
                 if (!sportMedia || !sportMedia.description || sportMedia.description.trim().length < 5) {
                     const sport = sports.find(s => s.id === sportId);
-                    errors[`media_description_${sportId}`] = `Description for ${sport ? sport.name : 'selected sport'} is required (minimum 5 characters)`;
+                    mediaDescErrors[sportId] = `Description for ${sport ? sport.name : 'selected sport'} is required (minimum 5 characters)`;
                     isValid = false;
                 }
             }
@@ -1307,33 +1595,77 @@ export default function AcademiesPage() {
         // Clear errors for fields that are valid
         setFieldErrors(prev => {
             const newErrors = { ...prev };
-            Object.keys(errors).forEach(key => {
-                if (!errors[key]) {
-                    delete newErrors[key];
-                }
-            });
-            // Clear previous media description errors
+            // Remove prior media description errors (both map and legacy keys)
+            delete newErrors.mediaDescription;
             Object.keys(newErrors).forEach(key => {
-                if (key.startsWith('media_description_') && !errors[key]) {
+                if (key.startsWith('media_description_')) {
                     delete newErrors[key];
                 }
             });
-            return { ...newErrors, ...errors };
+            if (Object.keys(mediaDescErrors).length > 0) {
+                newErrors.mediaDescription = mediaDescErrors;
+            }
+            return newErrors;
         });
 
         return isValid;
     };
 
     const validateTimingsTab = () => {
-        // Add validation for timings if needed
-        return true;
+        const errors = {};
+        let isValid = true;
+
+        if (!academyForm.callTimeFrom || !academyForm.callTimeFrom.trim()) {
+            errors.callTimeFrom = 'Call Time (From) is required';
+            isValid = false;
+        }
+        if (!academyForm.callTimeTo || !academyForm.callTimeTo.trim()) {
+            errors.callTimeTo = 'Call Time (To) is required';
+            isValid = false;
+        }
+
+        setFieldErrors(prev => {
+            const newErrors = { ...prev };
+            if (errors.callTimeFrom) {
+                newErrors.callTimeFrom = errors.callTimeFrom;
+            } else {
+                delete newErrors.callTimeFrom;
+            }
+            if (errors.callTimeTo) {
+                newErrors.callTimeTo = errors.callTimeTo;
+            } else {
+                delete newErrors.callTimeTo;
+            }
+            return newErrors;
+        });
+
+        return isValid;
     };
 
     const validateBankingTab = () => {
         const errors = {};
         let isValid = true;
 
-        if (academyForm.ifscCode && !validateIFSC(academyForm.ifscCode)) {
+        if (!academyForm.paymentMethod || !academyForm.paymentMethod.trim()) {
+            errors.paymentMethod = 'Payment Method is required';
+            isValid = false;
+        }
+        if (!academyForm.accountPersonName || !academyForm.accountPersonName.trim()) {
+            errors.accountPersonName = 'Account Person Name is required';
+            isValid = false;
+        }
+        if (!academyForm.bankName || !academyForm.bankName.trim()) {
+            errors.bankName = 'Bank Name is required';
+            isValid = false;
+        }
+        if (!academyForm.accountNumber || !academyForm.accountNumber.trim()) {
+            errors.accountNumber = 'Account Number is required';
+            isValid = false;
+        }
+        if (!academyForm.ifscCode || !academyForm.ifscCode.trim()) {
+            errors.ifscCode = 'IFSC Code is required';
+            isValid = false;
+        } else if (!validateIFSC(academyForm.ifscCode)) {
             errors.ifscCode = 'IFSC Code is invalid';
             isValid = false;
         }
@@ -1410,13 +1742,13 @@ export default function AcademiesPage() {
                     academyForm.addressLineOne?.trim() &&
                     academyForm.state?.trim() &&
                     academyForm.city?.trim() &&
-                    academyForm.pincode?.trim()
+                    /^\d{6}$/.test((academyForm.pincode || '').trim())
                 );
             case 'sports':
-                return Boolean(academyForm.selectedSports?.length > 0);
+                return Boolean(selectedSportsSafe?.length > 0);
             case 'media':
-                if (academyForm.selectedSports.length > 0) {
-                    for (const sportId of academyForm.selectedSports) {
+                if (selectedSportsSafe.length > 0) {
+                    for (const sportId of selectedSportsSafe) {
                         const sportMedia = academyForm.mediaBySport[sportId];
                         if (!sportMedia || !sportMedia.description || sportMedia.description.trim().length < 5) {
                             return false;
@@ -1425,9 +1757,19 @@ export default function AcademiesPage() {
                 }
                 return true;
             case 'timings':
-                return true;
+                return Boolean(
+                    academyForm.callTimeFrom?.trim() &&
+                    academyForm.callTimeTo?.trim()
+                );
             case 'banking':
-                return !academyForm.ifscCode || validateIFSC(academyForm.ifscCode);
+                return Boolean(
+                    academyForm.paymentMethod?.trim() &&
+                    academyForm.accountPersonName?.trim() &&
+                    academyForm.bankName?.trim() &&
+                    academyForm.accountNumber?.trim() &&
+                    academyForm.ifscCode?.trim() &&
+                    validateIFSC(academyForm.ifscCode)
+                );
             default:
                 return true;
         }
@@ -1455,11 +1797,36 @@ export default function AcademiesPage() {
             }
             return;
         }
+
+        // If trying to move past sports, ensure at least one sport is selected
+        const targetIndex = tabs.findIndex(t => t.id === tabId);
+        const sportsIndex = tabs.findIndex(t => t.id === 'sports');
+        const currentIndex = tabs.findIndex(t => t.id === activeTab);
+        if (targetIndex > sportsIndex && !ensureSportsSelected()) {
+            setActiveTab('sports');
+            return;
+        }
         
         setActiveTab(tabId);
     };
 
+    const ensureSportsSelected = () => {
+        if (!selectedSportsSafe || selectedSportsSafe.length === 0) {
+            setFieldErrors(prev => ({ ...prev, selectedSports: 'At least one Sport is required' }));
+            return false;
+        }
+        return true;
+    };
+
     const handleNextTab = () => {
+        const sportsIndex = tabs.findIndex(t => t.id === 'sports');
+        const activeIndex = tabs.findIndex(t => t.id === activeTab);
+
+        // Extra guard: if we're on or past Sports, require at least one sport
+        if (activeIndex >= sportsIndex && !ensureSportsSelected()) {
+            setActiveTab('sports');
+            return;
+        }
         // Validate current tab before proceeding
         if (!validateTab(activeTab)) {
             return;
@@ -1540,6 +1907,136 @@ export default function AcademiesPage() {
     return (
         <div style={styles.mainContent}>
                 {renderConfirmModal()}
+                {logoCropper.isOpen && (
+                    <div
+                        style={{
+                            position: 'fixed',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.55)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 9999,
+                            padding: '16px'
+                        }}
+                        onMouseMove={handleCropMouseMove}
+                        onMouseUp={handleCropMouseUp}
+                        onMouseLeave={handleCropMouseUp}
+                    >
+                        <div
+                            style={{
+                                backgroundColor: '#fff',
+                                borderRadius: '12px',
+                                padding: '20px',
+                                width: '520px',
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                                <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>Crop Logo</div>
+                                <button
+                                    type="button"
+                                    onClick={closeLogoCropper}
+                                    style={{
+                                        border: 'none',
+                                        background: 'none',
+                                        cursor: 'pointer',
+                                        fontSize: '18px',
+                                        color: '#94a3b8'
+                                    }}
+                                    aria-label="Close cropper"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div
+                                style={{
+                                    width: `${CROP_BOX_SIZE}px`,
+                                    height: `${CROP_BOX_SIZE}px`,
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    border: '2px solid #e2e8f0',
+                                    margin: '0 auto 16px',
+                                    position: 'relative',
+                                    backgroundColor: '#0f172a'
+                                }}
+                                onMouseDown={handleCropMouseDown}
+                            >
+                                {logoCropper.imageSrc && (
+                                    <img
+                                        src={logoCropper.imageSrc}
+                                        alt="Crop preview"
+                                        draggable={false}
+                                        style={{
+                                            position: 'absolute',
+                                            top: '50%',
+                                            left: '50%',
+                                            transform: `translate(-50%, -50%) translate(${logoCropper.pos.x}px, ${logoCropper.pos.y}px) scale(${logoCropper.baseScale * logoCropper.scale})`,
+                                            transformOrigin: 'center center',
+                                            width: `${logoCropper.imgWidth}px`,
+                                            height: `${logoCropper.imgHeight}px`,
+                                            userSelect: 'none',
+                                            pointerEvents: 'none'
+                                        }}
+                                    />
+                                )}
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                                <span style={{ fontSize: '12px', color: '#64748b', width: '60px' }}>Zoom</span>
+                                <input
+                                    type="range"
+                                    min="0.8"
+                                    max="3"
+                                    step="0.05"
+                                    value={logoCropper.scale}
+                                    onChange={handleCropZoom}
+                                    style={{ flex: 1 }}
+                                />
+                                <span style={{ fontSize: '12px', color: '#0f172a', width: '50px', textAlign: 'right' }}>
+                                    {(logoCropper.scale * 100).toFixed(0)}%
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                                <button
+                                    type="button"
+                                    onClick={closeLogoCropper}
+                                    style={{
+                                        padding: '10px 16px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #e2e8f0',
+                                        backgroundColor: '#fff',
+                                        color: '#0f172a',
+                                        cursor: 'pointer',
+                                        fontWeight: 600
+                                    }}
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmLogoCrop}
+                                    style={{
+                                        padding: '10px 16px',
+                                        borderRadius: '8px',
+                                        border: 'none',
+                                        backgroundColor: '#023B84',
+                                        color: '#fff',
+                                        cursor: 'pointer',
+                                        fontWeight: 700
+                                    }}
+                                >
+                                    Save Logo
+                                </button>
+                            </div>
+                            <div style={{ marginTop: '12px', fontSize: '12px', color: '#64748b' }}>
+                                Upload up to 50MB (final cropped under 5MB).
+                            </div>
+                        </div>
+                    </div>
+                )}
                 {/* Form Header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
                     <button
@@ -1595,7 +2092,7 @@ export default function AcademiesPage() {
                                     borderColor: isActive ? '#e2e8f0' : 'transparent',
                                     background: isActive ? '#ffffff' : 'transparent',
                                     borderRadius: isActive ? '8px' : '0',
-                                    color: isActive ? '#0f172a' : (!isTabAccessible(tab.id) ? '#cbd5e1' : '#64748b'),
+                                    color: isActive ? '#0f172a' : (!isTabAccessible(tab.id) ? '#323e4c' : '#64748b'),
                                     fontWeight: isActive ? '700' : '500',
                                     fontSize: '14px',
                                     cursor: isTabAccessible(tab.id) ? 'pointer' : 'not-allowed',
@@ -1653,77 +2150,81 @@ export default function AcademiesPage() {
                                 )}
                             </div>
 
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
-                                    Phone Number <span style={{ color: '#ef4444' }}>*</span>
-                                </label>
-                                <div style={{ display: 'flex', gap: '8px' }}>
-                                    <div style={{
-                                        padding: '10px 14px',
-                                        backgroundColor: '#f1f5f9',
-                                        border: '1px solid #e2e8f0',
-                                        borderRadius: '8px',
-                                        fontSize: '14px',
-                                        color: '#64748b',
-                                        fontWeight: '600'
-                                    }}>
-                                        +91
-                                    </div>
-                                    <input
-                                        type="tel"
-                                        style={{ ...styles.input, marginBottom: 0, flex: 1, fontFamily: navFontFamily, borderColor: fieldErrors.phoneNumber ? '#ef4444' : styles.input.borderColor }}
-                                        value={academyForm.phoneNumber}
-                                        onChange={(e) => {
-                                            const value = e.target.value.replace(/\D/g, '');
-                                            // Allow any number input, validation will check the value
-                                            setAcademyForm({ ...academyForm, phoneNumber: value.slice(0, 10) });
-                                            // Clear error if value becomes valid
-                                            if (value && value.length === 10 && /^[6789]/.test(value)) {
-                                                if (fieldErrors.phoneNumber) {
-                                                    setFieldErrors(prev => {
-                                                        const newErrors = { ...prev };
-                                                        delete newErrors.phoneNumber;
-                                                        return newErrors;
-                                                    });
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Phone Number <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <div style={{
+                                            padding: '10px 14px',
+                                            backgroundColor: '#f1f5f9',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '8px',
+                                            fontSize: '14px',
+                                            color: '#64748b',
+                                            fontWeight: '600'
+                                        }}>
+                                            +91
+                                        </div>
+                                        <input
+                                            type="tel"
+                                            style={{ ...styles.input, marginBottom: 0, flex: 1, fontFamily: navFontFamily, borderColor: fieldErrors.phoneNumber ? '#ef4444' : styles.input.borderColor }}
+                                            value={academyForm.phoneNumber}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/\D/g, '');
+                                                // Allow any number input, validation will check the value
+                                                setAcademyForm({ ...academyForm, phoneNumber: value.slice(0, 10) });
+                                                // Clear error if value becomes valid
+                                                if (value && value.length === 10 && /^[6789]/.test(value)) {
+                                                    if (fieldErrors.phoneNumber) {
+                                                        setFieldErrors(prev => {
+                                                            const newErrors = { ...prev };
+                                                            delete newErrors.phoneNumber;
+                                                            return newErrors;
+                                                        });
+                                                    }
                                                 }
+                                            }}
+                                            onBlur={validatePhoneNumber}
+                                            placeholder="Enter 10-digit mobile number (Starts with 6,7,8,9)"
+                                            maxLength={10}
+                                        />
+                                    </div>
+                                    {fieldErrors.phoneNumber && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.phoneNumber}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div>
+                                    <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
+                                        Email <span style={{ color: '#ef4444' }}>*</span>
+                                    </label>
+                                    <input
+                                        type="email"
+                                        style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.email ? '#ef4444' : styles.input.borderColor }}
+                                        value={academyForm.email}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, email: e.target.value });
+                                            if (fieldErrors.email) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.email;
+                                                    return newErrors;
+                                                });
                                             }
                                         }}
-                                        placeholder="Enter 10-digit mobile number (Starts with 6,7,8,9)"
-                                        maxLength={10}
+                                        onBlur={validateEmail}
+                                        placeholder="center@example.com"
                                     />
+                                    {fieldErrors.email && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.email}
+                                        </div>
+                                    )}
                                 </div>
-                                {fieldErrors.phoneNumber && (
-                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
-                                        {fieldErrors.phoneNumber}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div>
-                                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
-                                    Email <span style={{ color: '#ef4444' }}>*</span>
-                                </label>
-                                <input
-                                    type="email"
-                                    style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.email ? '#ef4444' : styles.input.borderColor }}
-                                    value={academyForm.email}
-                                    onChange={(e) => {
-                                        setAcademyForm({ ...academyForm, email: e.target.value });
-                                        if (fieldErrors.email) {
-                                            setFieldErrors(prev => {
-                                                const newErrors = { ...prev };
-                                                delete newErrors.email;
-                                                return newErrors;
-                                            });
-                                        }
-                                    }}
-                                    placeholder="center@example.com"
-                                />
-                                {fieldErrors.email && (
-                                    <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
-                                        {fieldErrors.email}
-                                    </div>
-                                )}
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr', gap: '20px', alignItems: 'start' }}>
@@ -2144,7 +2645,7 @@ export default function AcademiesPage() {
                                             <label style={{ cursor: 'pointer', display: 'block' }}>
                                                 <Upload size={32} color="#94a3b8" style={{ margin: '0 auto 12px' }} />
                                                 <div style={{ fontSize: '16px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>Upload Logo</div>
-                                                <div style={{ fontSize: '12px', color: '#64748b' }}>PNG, JPG up to 5MB</div>
+                                                <div style={{ fontSize: '12px', color: '#64748b' }}>PNG/JPG up to 50MB (final cropped under 5MB)</div>
                                                 <input
                                                     type="file"
                                                     accept=".jpg,.jpeg,.png"
@@ -2180,7 +2681,7 @@ export default function AcademiesPage() {
                                             // Allow any number input, validation will check the value
                                             setAcademyForm({ ...academyForm, minimumAge: value });
                                             // Clear error if value becomes valid
-                                            if (value && !isNaN(parseInt(value)) && parseInt(value) >= 3) {
+                                            if (value && !isNaN(parseInt(value)) && parseInt(value) >= 3 && parseInt(value) <= 18) {
                                                 if (fieldErrors.minimumAge) {
                                                     setFieldErrors(prev => {
                                                         const newErrors = { ...prev };
@@ -2190,6 +2691,7 @@ export default function AcademiesPage() {
                                                 }
                                             }
                                         }}
+                                        onBlur={validateMinimumAge}
                                         placeholder="e.g., 3"
                                     />
                                     {fieldErrors.minimumAge && (
@@ -2211,7 +2713,7 @@ export default function AcademiesPage() {
                                             // Allow any number input, validation will check the value
                                             setAcademyForm({ ...academyForm, maximumAge: value });
                                             // Clear error if value becomes valid
-                                            if (value && !isNaN(parseInt(value)) && parseInt(value) <= 18) {
+                                            if (value && !isNaN(parseInt(value)) && parseInt(value) >= 3 && parseInt(value) <= 18) {
                                                 if (fieldErrors.maximumAge) {
                                                     setFieldErrors(prev => {
                                                         const newErrors = { ...prev };
@@ -2221,6 +2723,7 @@ export default function AcademiesPage() {
                                                 }
                                             }
                                         }}
+                                        onBlur={validateMaximumAge}
                                         placeholder="e.g., 18"
                                     />
                                     {fieldErrors.maximumAge && (
@@ -2480,7 +2983,7 @@ export default function AcademiesPage() {
                                         }}
                                     >
                                         <option value="">Select state</option>
-                                        {indianStates.map((state) => (
+                                        {sortedStates.map((state) => (
                                             <option key={state} value={state}>
                                                 {state}
                                             </option>
@@ -2512,7 +3015,7 @@ export default function AcademiesPage() {
                                         disabled={!academyForm.state}
                                     >
                                         <option value="">{academyForm.state ? 'Select city' : 'Select state first'}</option>
-                                        {academyForm.state && indianCities[academyForm.state] && indianCities[academyForm.state].map((city) => (
+                                        {academyForm.state && sortedCitiesByState[academyForm.state] && sortedCitiesByState[academyForm.state].map((city) => (
                                             <option key={city} value={city}>
                                                 {city}
                                             </option>
@@ -2536,8 +3039,9 @@ export default function AcademiesPage() {
                                     style={{ ...styles.input, fontFamily: navFontFamily, borderColor: fieldErrors.pincode ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.pincode}
                                     onChange={(e) => {
-                                        setAcademyForm({ ...academyForm, pincode: e.target.value.replace(/\D/g, '').slice(0, 6) });
-                                        if (fieldErrors.pincode) {
+                                        const cleaned = e.target.value.replace(/\D/g, '').slice(0, 6);
+                                        setAcademyForm({ ...academyForm, pincode: cleaned });
+                                        if (/^\d{6}$/.test(cleaned) && fieldErrors.pincode) {
                                             setFieldErrors(prev => {
                                                 const newErrors = { ...prev };
                                                 delete newErrors.pincode;
@@ -2547,6 +3051,14 @@ export default function AcademiesPage() {
                                     }}
                                     placeholder="Enter 6-digit pincode"
                                     maxLength={6}
+                                    onBlur={() => {
+                                        const pin = (academyForm.pincode || '').trim();
+                                        if (!pin) {
+                                            setFieldErrors(prev => ({ ...prev, pincode: 'Pincode is required' }));
+                                        } else if (!/^\d{6}$/.test(pin)) {
+                                            setFieldErrors(prev => ({ ...prev, pincode: 'Pincode must be exactly 6 digits' }));
+                                        }
+                                    }}
                                 />
                                 {fieldErrors.pincode && (
                                     <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
@@ -2601,7 +3113,7 @@ export default function AcademiesPage() {
                                         style={{ 
                                             position: 'absolute', 
                                             left: '12px', 
-                                            top: '50%', 
+                                            top: '40%', 
                                             transform: 'translateY(-50%)', 
                                             pointerEvents: 'none' 
                                         }} 
@@ -2760,7 +3272,7 @@ export default function AcademiesPage() {
                     {/* Media Tab */}
                     {activeTab === 'media' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
-                            {academyForm.selectedSports.length === 0 ? (
+                            {selectedSportsSafe.length === 0 ? (
                                 <div style={{ 
                                     padding: '40px', 
                                     textAlign: 'center', 
@@ -2773,7 +3285,7 @@ export default function AcademiesPage() {
                                     Please select at least one sport in the Sports tab to add media
                                 </div>
                             ) : (
-                                academyForm.selectedSports.map((sportId) => {
+                                selectedSportsSafe.map((sportId) => {
                                     const sport = sports.find(s => s.id === sportId);
                                     if (!sport) return null;
                                     
@@ -2837,7 +3349,8 @@ export default function AcademiesPage() {
                                                             ...styles.input, 
                                                             fontFamily: navFontFamily,
                                                             minHeight: '80px',
-                                                            resize: 'vertical'
+                                                            resize: 'vertical',
+                                                            borderColor: (fieldErrors.mediaDescription && fieldErrors.mediaDescription[sportId]) ? '#ef4444' : styles.input.borderColor
                                                         }}
                                                         value={sportMedia.description}
                                                         onChange={(e) => {
@@ -2851,6 +3364,37 @@ export default function AcademiesPage() {
                                                                     }
                                                                 }
                                                             }));
+                                                            // Inline validation on change
+                                                            const val = e.target.value || '';
+                                                            if (!val.trim() || val.trim().length < 5) {
+                                                                setFieldErrors(prev => {
+                                                                    const md = { ...(prev.mediaDescription || {}) };
+                                                                    md[sportId] = 'Description is required (min 5 characters)';
+                                                                    return { ...prev, mediaDescription: md };
+                                                                });
+                                                            } else if (fieldErrors.mediaDescription && fieldErrors.mediaDescription[sportId]) {
+                                                                setFieldErrors(prev => {
+                                                                    const md = { ...(prev.mediaDescription || {}) };
+                                                                    delete md[sportId];
+                                                                    const next = { ...prev };
+                                                                    if (Object.keys(md).length > 0) {
+                                                                        next.mediaDescription = md;
+                                                                    } else {
+                                                                        delete next.mediaDescription;
+                                                                    }
+                                                                    return next;
+                                                                });
+                                                            }
+                                                        }}
+                                                        onBlur={(e) => {
+                                                            const val = e.target.value || '';
+                                                            if (!val.trim() || val.trim().length < 5) {
+                                                                setFieldErrors(prev => {
+                                                                    const md = { ...(prev.mediaDescription || {}) };
+                                                                    md[sportId] = 'Description is required (min 5 characters)';
+                                                                    return { ...prev, mediaDescription: md };
+                                                                });
+                                                            }
                                                         }}
                                                     />
                                                     <div style={{ 
@@ -2861,6 +3405,11 @@ export default function AcademiesPage() {
                                                     }}>
                                                         Minimum 5 characters required. Describe the facilities, coaching approach, or special features for {sport.name}.
                                                     </div>
+                                                    {fieldErrors.mediaDescription && fieldErrors.mediaDescription[sportId] && (
+                                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                                            {fieldErrors.mediaDescription[sportId]}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 {/* Images Upload */}
@@ -3212,41 +3761,104 @@ export default function AcademiesPage() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                        Call Time (From)
+                                        Call Time (From) <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <input
                                         type="time"
-                                        style={styles.input}
+                                        style={{ ...styles.input, borderColor: fieldErrors.callTimeFrom ? '#ef4444' : styles.input.borderColor }}
                                         value={academyForm.callTimeFrom}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, callTimeFrom: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, callTimeFrom: e.target.value });
+                                            if (fieldErrors.callTimeFrom) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.callTimeFrom;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.callTimeFrom || !academyForm.callTimeFrom.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, callTimeFrom: 'Call Time (From) is required' }));
+                                            }
+                                        }}
                                     />
+                                    {fieldErrors.callTimeFrom && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.callTimeFrom}
+                                        </div>
+                                    )}
                                 </div>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                        Call Time (To)
+                                        Call Time (To) <span style={{ color: '#ef4444' }}>*</span>
                                     </label>
                                     <input
                                         type="time"
-                                        style={styles.input}
+                                        style={{ ...styles.input, borderColor: fieldErrors.callTimeTo ? '#ef4444' : styles.input.borderColor }}
                                         value={academyForm.callTimeTo}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, callTimeTo: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, callTimeTo: e.target.value });
+                                            if (fieldErrors.callTimeTo) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.callTimeTo;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.callTimeTo || !academyForm.callTimeTo.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, callTimeTo: 'Call Time (To) is required' }));
+                                            }
+                                        }}
                                     />
+                                    {fieldErrors.callTimeTo && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.callTimeTo}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* Banking Tab */}
+                    {/* Banking Tab */}                                   
                     {activeTab === 'banking' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Payment Method
+                                    Payment Method <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <select
-                                    style={styles.input}
+                                        style={{ 
+                                            ...styles.input, 
+                                            borderColor: fieldErrors.paymentMethod ? '#ef4444' : styles.input.borderColor,
+                                            marginLeft: '-6px',
+                                            width: 'calc(100% + 6px)',
+                                            paddingRight: '24px',
+                                            appearance: 'auto',
+                                            WebkitAppearance: 'auto',
+                                            MozAppearance: 'auto',
+                                            backgroundImage: 'initial',
+                                            backgroundPosition: 'right center'
+                                        }}
                                     value={academyForm.paymentMethod}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, paymentMethod: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, paymentMethod: e.target.value });
+                                            if (fieldErrors.paymentMethod) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.paymentMethod;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.paymentMethod || !academyForm.paymentMethod.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, paymentMethod: 'Payment Method is required' }));
+                                            }
+                                        }}
                                 >
                                     <option value="">Select payment method</option>
                                     <option value="bank_transfer">Bank Transfer</option>
@@ -3254,69 +3866,147 @@ export default function AcademiesPage() {
                                     <option value="cheque">Cheque</option>
                                     <option value="cash">Cash</option>
                                 </select>
+                                    {fieldErrors.paymentMethod && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.paymentMethod}
+                                        </div>
+                                    )}
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Account Person Name
+                                    Account Person Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    style={styles.input}
+                                        style={{ ...styles.input, borderColor: fieldErrors.accountPersonName ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.accountPersonName}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, accountPersonName: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, accountPersonName: e.target.value });
+                                            if (fieldErrors.accountPersonName) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.accountPersonName;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.accountPersonName || !academyForm.accountPersonName.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, accountPersonName: 'Account Person Name is required' }));
+                                            }
+                                        }}
                                     placeholder="Enter account holder name"
                                 />
+                                    {fieldErrors.accountPersonName && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.accountPersonName}
+                                        </div>
+                                    )}
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Bank Name
+                                    Bank Name <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    style={styles.input}
+                                        style={{ ...styles.input, borderColor: fieldErrors.bankName ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.bankName}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, bankName: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, bankName: e.target.value });
+                                            if (fieldErrors.bankName) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.bankName;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.bankName || !academyForm.bankName.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, bankName: 'Bank Name is required' }));
+                                            }
+                                        }}
                                     placeholder="Enter bank name"
                                 />
+                                    {fieldErrors.bankName && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.bankName}
+                                        </div>
+                                    )}
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    Account Number
+                                    Account Number <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    style={styles.input}
+                                        style={{ ...styles.input, borderColor: fieldErrors.accountNumber ? '#ef4444' : styles.input.borderColor }}
                                     value={academyForm.accountNumber}
-                                    onChange={(e) => setAcademyForm({ ...academyForm, accountNumber: e.target.value })}
+                                        onChange={(e) => {
+                                            setAcademyForm({ ...academyForm, accountNumber: e.target.value });
+                                            if (fieldErrors.accountNumber) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.accountNumber;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.accountNumber || !academyForm.accountNumber.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, accountNumber: 'Account Number is required' }));
+                                            }
+                                        }}
                                     placeholder="Enter account number"
                                 />
+                                    {fieldErrors.accountNumber && (
+                                        <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', fontFamily: navFontFamily }}>
+                                            {fieldErrors.accountNumber}
+                                        </div>
+                                    )}
                             </div>
                             <div>
                                 <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                                    IFSC Code
+                                    IFSC Code <span style={{ color: '#ef4444' }}>*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    style={{
-                                        ...styles.input,
-                                        borderColor: ifscError ? '#ef4444' : styles.input.border,
-                                        textTransform: 'uppercase'
-                                    }}
-                                    value={academyForm.ifscCode}
-                                    onChange={(e) => handleIFSCChange(e.target.value)}
-                                    placeholder="Enter IFSC code (e.g., ABCD0123456)"
-                                    maxLength={11}
+                                        style={{
+                                            ...styles.input,
+                                            borderColor: fieldErrors.ifscCode ? '#ef4444' : styles.input.borderColor,
+                                            textTransform: 'uppercase'
+                                        }}
+                                        value={academyForm.ifscCode}
+                                        onChange={(e) => {
+                                            handleIFSCChange(e.target.value);
+                                            if (fieldErrors.ifscCode) {
+                                                setFieldErrors(prev => {
+                                                    const newErrors = { ...prev };
+                                                    delete newErrors.ifscCode;
+                                                    return newErrors;
+                                                });
+                                            }
+                                        }}
+                                        onBlur={() => {
+                                            if (!academyForm.ifscCode || !academyForm.ifscCode.trim()) {
+                                                setFieldErrors(prev => ({ ...prev, ifscCode: 'IFSC Code is required' }));
+                                            } else if (!validateIFSC(academyForm.ifscCode)) {
+                                                setFieldErrors(prev => ({ ...prev, ifscCode: 'IFSC Code is invalid' }));
+                                            }
+                                        }}
+                                        placeholder="Enter IFSC code (e.g., ABCD0123456)"
+                                        maxLength={11}
                                 />
-                                {ifscError && (
-                                    <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                                        {ifscError}
-                                    </span>
-                                )}
-                                {academyForm.ifscCode && !ifscError && academyForm.ifscCode.length === 11 && (
-                                    <span style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                                        ✓ Valid IFSC code
-                                    </span>
-                                )}
+                                    {fieldErrors.ifscCode && (
+                                        <span style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                                            {fieldErrors.ifscCode}
+                                        </span>
+                                    )}
+                                    {!fieldErrors.ifscCode && academyForm.ifscCode && academyForm.ifscCode.length === 11 && validateIFSC(academyForm.ifscCode) && (
+                                        <span style={{ color: '#16a34a', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                                            ✓ Valid IFSC code
+                                        </span>
+                                    )}
                             </div>
                         </div>
                     )}
@@ -3357,23 +4047,31 @@ export default function AcademiesPage() {
                         {activeTab === 'banking' ? (
                             <button
                                 onClick={handleSaveAcademy}
+                                disabled={!validateTabSilent('banking')}
                                 style={{
                                     ...styles.button,
-                                    backgroundColor: '#f97316',
+                                    backgroundColor: validateTabSilent('banking') ? '#f97316' : '#f1f5f9',
+                                    color: validateTabSilent('banking') ? '#fff' : '#94a3b8',
                                     padding: '10px 20px',
-                                    fontFamily: navFontFamily
+                                    fontFamily: navFontFamily,
+                                    cursor: validateTabSilent('banking') ? 'pointer' : 'not-allowed',
+                                    opacity: validateTabSilent('banking') ? 1 : 0.6
                                 }}
                             >
                                 {editingAcademy ? 'Update Center' : 'Add Center'}
                             </button>
                         ) : (
                             <button
-                                onClick={handleNextTab}
+                                            onClick={handleNextTab}
+                                disabled={activeTab === 'banking' ? false : !validateTabSilent(activeTab)}
                                 style={{
                                     ...styles.button,
-                                    backgroundColor: '#f97316',
+                                    backgroundColor: (activeTab === 'banking' ? false : !validateTabSilent(activeTab)) ? '#f1f5f9' : '#f97316',
+                                    color: (activeTab === 'banking' ? false : !validateTabSilent(activeTab)) ? '#94a3b8' : '#fff',
                                     padding: '10px 20px',
-                                    fontFamily: navFontFamily
+                                    fontFamily: navFontFamily,
+                                    cursor: (activeTab === 'banking' ? false : !validateTabSilent(activeTab)) ? 'not-allowed' : 'pointer',
+                                    opacity: (activeTab === 'banking' ? false : !validateTabSilent(activeTab)) ? 0.6 : 1
                                 }}
                             >
                                 Next
@@ -3386,6 +4084,13 @@ export default function AcademiesPage() {
     }
 
     // StatsBar Component
+    const DetailRow = ({ label, value }) => (
+        <div style={{ padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '10px', background: '#f8fafc' }}>
+            <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>{label}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a' }}>{value || 'N/A'}</div>
+        </div>
+    );
+
     const StatsBar = ({ styles, totalAcademies, activeAcademies }) => {
         const stats = [
             { label: 'Total Academy', value: totalAcademies, icon: Building2 },
@@ -3425,6 +4130,177 @@ export default function AcademiesPage() {
             </div>
         );
     };
+
+    // Detail view inline (instead of popup)
+    if (viewMode === 'detail' && detailAcademy) {
+    return (
+        <div style={styles.mainContent}>
+                {renderConfirmModal()}
+                <div style={{
+                    background: '#fff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '24px',
+                    marginBottom: '16px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    flexWrap: 'wrap'
+                }}>
+                    <div>
+                        <h1 style={{
+                            fontSize: '28px',
+                            fontWeight: 700,
+                            margin: '0 0 6px',
+                            color: styles.title.color,
+                            fontFamily: navFontFamily
+                        }}>
+                            Academy Details
+                        </h1>
+                        <p style={{ margin: 0, color: styles.subtitle.color, fontSize: '14px', fontFamily: navFontFamily }}>
+                            View full information for {detailAcademy.name || detailAcademy.centerName || 'Academy'}.
+                        </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <button
+                            onClick={closeDetailDrawer}
+                            style={{
+                                background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '12px 20px',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontFamily: navFontFamily,
+                                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                                transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                            }}
+                        >
+                            Back to List
+                        </button>
+                        <button
+                            style={{
+                                background: 'linear-gradient(135deg, #023b84 0%, #023b84 100%)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '10px',
+                                padding: '12px 20px',
+                                fontSize: '14px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                fontFamily: navFontFamily,
+                                boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                                transition: 'all 0.2s ease'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)';
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                            }}
+                            onClick={() => {
+                                handleEditAcademy(detailAcademy, true);
+                            }}
+                        >
+                            Edit Academy
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{
+                    background: '#fff',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '14px',
+                    padding: '24px',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                        <div>
+                            <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '4px' }}>Academy</div>
+                            <div style={{ fontSize: '24px', fontWeight: 700, color: '#0f172a' }}>
+                                {detailAcademy.name || detailAcademy.centerName || 'Academy'}
+                            </div>
+                            <div style={{ color: '#475569', fontSize: '13px', marginTop: '4px' }}>
+                                Owner: {detailAcademy.ownerName || 'N/A'}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ padding: '8px 12px', borderRadius: '999px', background: detailAcademy.status === 'active' ? '#ecfdf3' : '#fef2f2', color: detailAcademy.status === 'active' ? '#166534' : '#b91c1c', fontWeight: 700, fontSize: '13px' }}>
+                                {detailAcademy.status ? detailAcademy.status.toUpperCase() : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <DetailRow label="Owner Name" value={detailAcademy.ownerName || 'N/A'} />
+                        <DetailRow label="Mobile Number" value={detailAcademy.contact || 'N/A'} />
+                        <DetailRow label="Email" value={detailAcademy.email || 'N/A'} />
+                        <DetailRow label="Added By" value={detailAcademy.addedBy || 'Admin'} />
+                        <DetailRow label="Created Date" value={detailAcademy.createDate || 'N/A'} />
+                        <DetailRow label="Experience" value={detailAcademy.experience ? `${detailAcademy.experience} yrs` : 'N/A'} />
+                        <DetailRow label="Allowed Genders" value={detailAcademy.allowedGenders && detailAcademy.allowedGenders.length ? detailAcademy.allowedGenders.join(', ') : 'N/A'} />
+                        <DetailRow label="Age Range" value={(detailAcademy.minimumAge && detailAcademy.maximumAge) ? `${detailAcademy.minimumAge} - ${detailAcademy.maximumAge}` : 'N/A'} />
+                        <DetailRow label="City" value={detailAcademy.city || 'N/A'} />
+                        <DetailRow label="State" value={detailAcademy.state || 'N/A'} />
+                    </div>
+
+                    {(detailAcademy.rules && detailAcademy.rules.length > 0) && (
+                        <div style={{ marginTop: '4px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Rules</div>
+                            <ul style={{ paddingLeft: '18px', color: '#475569', fontSize: '13px', margin: 0, display: 'grid', gap: '6px' }}>
+                                {detailAcademy.rules.map((rule, idx) => (
+                                    <li key={idx}>{rule}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {(detailAcademy.facilities && detailAcademy.facilities.length > 0) && (
+                        <div style={{ marginTop: '4px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>Facilities</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                {detailAcademy.facilities.map((facility, idx) => (
+                                    <span key={idx} style={{ padding: '6px 10px', background: '#f1f5f9', borderRadius: '999px', fontSize: '12px', color: '#0f172a' }}>{facility}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {detailAcademy.addressLineOne || detailAcademy.addressLineTwo ? (
+                        <div style={{ marginTop: '4px' }}>
+                            <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>Address</div>
+                            <div style={{ color: '#475569', fontSize: '13px' }}>
+                                {[detailAcademy.addressLineOne, detailAcademy.addressLineTwo, detailAcademy.city, detailAcademy.state, detailAcademy.pincode].filter(Boolean).join(', ')}
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            </div>
+        );
+    }
 
     // List view (default)
     return (
@@ -3692,9 +4568,10 @@ export default function AcademiesPage() {
                             }}
                         >
                             <option value="all">All</option>
-                            {sports.map((sport) => (
-                                <option key={sport.id} value={sport.id.toString()}>{sport.name}</option>
-                            ))}
+                            {sportsOptionsHydrated &&
+                                sports.map((sport) => (
+                                    <option key={sport.id} value={sport.id.toString()}>{sport.name}</option>
+                                ))}
                         </select>
                     </div>
                 </div>
@@ -3728,19 +4605,33 @@ export default function AcademiesPage() {
                     </thead>
                     <tbody>
                             {paginatedAcademies.map((academy, index) => (
-                            <tr key={academy.id}>
+                            <tr
+                                key={academy.id}
+                                onClick={() => openDetailDrawer(academy)}
+                                onMouseEnter={() => setHoveredRowId(academy.id)}
+                                onMouseLeave={() => setHoveredRowId(null)}
+                                style={{
+                                    cursor: 'pointer',
+                                    backgroundColor: hoveredRowId === academy.id ? '#e9eef5' : 'transparent',
+                                    boxShadow: hoveredRowId === academy.id ? 'inset 0 0 0 1px #aab2bd, 0 1px 4px rgba(15, 23, 42, 0.08)' : 'none',
+                                    transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
+                                }}
+                                title="View academy details"
+                            >
                                 <td style={tdCenter}>{start + index + 1}</td>
-                                <td style={{ ...tdCenter, fontWeight: '500', whiteSpace: 'nowrap' }}>
+                                <td style={{ ...tdCenter, fontWeight: '500', whiteSpace: 'nowrap', color: '#023B84' }}>
                                     {academy.ownerName || 'N/A'}
                                 </td>
                                 <td style={tdCenter}>{academy.email}</td>
-                                <td style={tdCenter}>{academy.name}</td>
+                                <td style={{ ...tdCenter, color: '#023B84' }}>
+                                    {academy.name}
+                                </td>
                                 <td style={tdCenter}>{academy.contact || '-'}</td>
                                 <td style={tdCenter}>{academy.addedBy || '-'}</td>
                                 <td style={tdCenter}>{academy.createDate || '-'}</td>
                                 <td style={tdCenter}>
                                     <div
-                                        onClick={() => toggleStatus(academy.id)}
+                                        onClick={(e) => { e.stopPropagation(); toggleStatus(academy.id); }}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -3763,15 +4654,15 @@ export default function AcademiesPage() {
                                         >
                                             <div
                                                 style={{
-                                                    position: 'absolute',
-                                                    top: '3px',
-                                                    left: academy.status === 'active' ? '36px' : '3px',
-                                                    width: '10px',
-                                                    height: '12px',
-                                                    borderRadius: '999px',
-                                                    background: '#ffffff',
-                                                    boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-                                                    transition: 'left 0.2s ease'
+                                                position: 'absolute',
+                                                top: '3px',
+                                                left: academy.status === 'active' ? '36px' : '3px',
+                                                width: '10px',
+                                                height: '12px',
+                                                borderRadius: '999px',
+                                                background: '#ffffff',
+                                                boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+                                                transition: 'left 0.2s ease'
                                                 }}
                                             />
                                         </div>
@@ -3781,14 +4672,14 @@ export default function AcademiesPage() {
                                     <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                                         <button
                                             style={{ ...styles.button, padding: '6px 12px', fontSize: '12px' }}
-                                            onClick={() => handleEditAcademy(academy)}
+                                            onClick={(e) => { e.stopPropagation(); handleEditAcademy(academy, false); }}
                                             title="Edit"
                                         >
                                             <Pencil size={16} color="#ffffff" />
                                         </button>
                                         <button
                                             style={{ ...styles.buttonDanger, padding: '6px 12px', fontSize: '12px', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                                            onClick={() => handleDelete(academy.id)}
+                                            onClick={(e) => { e.stopPropagation(); handleDelete(academy.id); }}
                                             title="Delete"
                                         >
                                             <Trash2 size={16} color="#ffffff" />
@@ -3870,7 +4761,7 @@ export default function AcademiesPage() {
                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
                                 <button
                                     style={{ ...styles.button, padding: '6px 10px', fontSize: '12px' }}
-                                    onClick={() => handleEditAcademy(academy)}
+                                    onClick={() => handleEditAcademy(academy, false)}
                                     title="Edit"
                                 >
                                     <Pencil size={14} color="#ffffff" />

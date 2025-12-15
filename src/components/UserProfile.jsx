@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Camera, Lock, Sun, Moon, LogOut } from 'lucide-react';
 
@@ -7,8 +7,13 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
     const styles = useTheme();
     const { toggleTheme, isDarkMode } = styles;
     const [isOpen, setIsOpen] = useState(false);
+    const [hasMounted, setHasMounted] = useState(false);
     const dropdownRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -22,6 +27,11 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
         };
     }, []);
 
+    // Avoid any SSR/client mismatch by only rendering after mount
+    if (!hasMounted) {
+        return null;
+    }
+
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -33,40 +43,27 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
         }
     };
 
-    // Create a completely stable style object to prevent hydration mismatches
-    // Use hardcoded values and only vary the backgroundImage based on avatar
+    // Stable avatar style; only backgroundImage varies with avatar
     const hasAvatar = Boolean(profile && profile.avatar);
     const avatarUrl = hasAvatar ? String(profile.avatar) : '';
 
-    const avatarStyle = useMemo(() => {
-        // Create object with all properties in fixed order and fixed values
-        // This ensures server and client render identical HTML
-        const style = {
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            backgroundColor: '#1e40af',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '18px',
-            color: 'white',
-            boxShadow: '0 2px 4px rgba(30, 64, 175, 0.2)',
-            cursor: 'pointer',
-            backgroundImage: 'none',
-            backgroundSize: 'auto',
-            backgroundPosition: 'center',
-            overflow: 'hidden'
-        };
-
-        // Only modify backgroundImage and backgroundSize if avatar exists
-        if (avatarUrl) {
-            style.backgroundImage = `url(${avatarUrl})`;
-            style.backgroundSize = 'cover';
-        }
-
-        return style;
-    }, [avatarUrl]);
+    const avatarStyle = {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        backgroundColor: '#1e40af',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '18px',
+        color: 'white',
+        boxShadow: '0 2px 4px rgba(30, 64, 175, 0.2)',
+        cursor: 'pointer',
+        backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'none',
+        backgroundSize: avatarUrl ? 'cover' : 'auto',
+        backgroundPosition: 'center',
+        overflow: 'hidden'
+    };
 
     return (
         <div style={styles.userProfile} ref={dropdownRef}>
