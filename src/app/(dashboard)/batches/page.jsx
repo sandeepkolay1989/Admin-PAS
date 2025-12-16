@@ -3,11 +3,13 @@ import React, { useState, useMemo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useRouter } from 'next/navigation';
+import { Upload } from 'lucide-react';
 
 export default function BatchesPage() {
     const { batches, setBatches, academies, sports } = useAdmin();
     const styles = useTheme();
     const router = useRouter();
+    const navFontFamily = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif";
 
     const [selectedSport, setSelectedSport] = useState('All Sports');
     const [selectedAcademy, setSelectedAcademy] = useState('All Academies');
@@ -58,14 +60,91 @@ export default function BatchesPage() {
     return (
         <div style={styles.mainContent}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '24px',
+                marginBottom: '24px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
                 <div>
-                    <h1 style={styles.title}>Batch Management</h1>
-                    <p style={{ color: '#64748b', fontSize: '14px' }}>Manage training batches and schedules</p>
+                    <h1 style={{
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        margin: 0,
+                        marginBottom: '4px',
+                        fontFamily: navFontFamily
+                    }}>
+                        Batch Management
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#64748b',
+                        margin: 0,
+                        fontFamily: navFontFamily
+                    }}>
+                        Manage training batches and schedules
+                    </p>
                 </div>
                 <div style={{ display: 'flex', gap: '10px' }}>
-                    <button style={{ ...styles.button, backgroundColor: 'white', color: '#334155', border: '1px solid #e2e8f0' }} onClick={() => router.refresh()}>Refresh</button>
-                    <button style={styles.button}>+ Add Batch</button>
+                    <button
+                        style={{
+                            background: '#fff',
+                            color: '#334155',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '10px',
+                            padding: '12px 20px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            fontFamily: navFontFamily,
+                            transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => router.refresh()}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f8fafc';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = '#fff';
+                        }}
+                    >
+                        Refresh
+                    </button>
+                    <button
+                        style={{
+                            background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '12px 20px',
+                            fontSize: '14px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontFamily: navFontFamily,
+                            boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                            transition: 'all 0.2s ease'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-1px)';
+                            e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                        }}
+                    >
+                        <Upload size={18} />
+                        + Add Batch
+                    </button>
                 </div>
             </div>
 

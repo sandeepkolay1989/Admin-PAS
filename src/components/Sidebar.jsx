@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from '../context/ThemeContext';
 import {
     LayoutDashboard,
@@ -25,6 +25,7 @@ export default function Sidebar() {
     const [hoveredItem, setHoveredItem] = useState(null);
     const [openGroups, setOpenGroups] = useState({});
     const pathname = usePathname();
+    const router = useRouter();
 
     const menuGroups = [
         {
@@ -112,12 +113,27 @@ export default function Sidebar() {
         border: '1px solid rgba(0, 0, 0, 0.08)',
     };
 
+    const handleNavClick = (e, path) => {
+        // Always send user to the page's start view.
+        // If already on that path, force a hard navigation to reset local state.
+        e.preventDefault();
+        if (pathname === path) {
+            window.location.href = path; // full reload to reset in-page state
+        } else {
+            router.push(path);
+        }
+    };
+
     return (
         <div style={{ 
             ...styles.sidebar, 
             display: 'flex', 
             flexDirection: 'column',
-            position: 'relative',
+            position: 'sticky',
+            top: 0,
+            alignSelf: 'flex-start',
+            height: '100vh',
+            zIndex: 5,
         }}>
             {/* Subtle overlay pattern for depth */}
             <div style={{
@@ -220,6 +236,7 @@ export default function Sidebar() {
                                                 href={item.path}
                                                 key={item.id}
                                                 style={{ textDecoration: 'none' }}
+                                                onClick={(e) => handleNavClick(e, item.path)}
                                             >
                                                 <div
                                                     style={{
