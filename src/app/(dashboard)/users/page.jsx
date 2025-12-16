@@ -7,7 +7,8 @@ import Input from '@/components/Input';
 import Button from '@/components/Button';
 import { Phone, Mail, MapPin, CalendarDays, Pencil, Trash2, Users, UserCheck, GraduationCap, CheckCircle2, Search, Upload, DownloadCloud } from 'lucide-react';
 import { X, HelpCircle } from 'lucide-react';
-
+import { getUsers } from '@/lib/api.js/users';
+import { API } from '@/lib/api.js/api';
 export default function UsersPage() {
     const { users, setUsers } = useAdmin();
     const styles = useTheme();
@@ -20,6 +21,8 @@ export default function UsersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState('list'); // list | grid
     const [showAddModal, setShowAddModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const emptyUser = {
         firstName: '',
         lastName: '',
@@ -42,6 +45,33 @@ export default function UsersPage() {
         isDeleted: false,
         deletedAt: null,
     };
+
+    useEffect(() => {
+        const getUsers = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const result = await authFetch(API.users);
+                if (result.status && result.data && Array.isArray(result.data)) {
+                    setUsers(result.data.map(user => ({
+                        id: user.id,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                        mobile: user.mobile,
+                        password: user.password,
+                    })));
+                } else {
+                    setError(result.message);
+                }
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getUsers();
+    }, [setUsers]);
     const [newUser, setNewUser] = useState(emptyUser);
     const [confirmModal, setConfirmModal] = useState(null); // { id, nextStatus }
 
@@ -318,7 +348,7 @@ export default function UsersPage() {
     };
 
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
             {/* Confirm modal */}
             {confirmModal && (
                 <div style={styles.modalOverlay}>
@@ -390,8 +420,8 @@ export default function UsersPage() {
                 background: '#fff',
                 border: '1px solid #e2e8f0',
                 borderRadius: '14px',
-                padding: '24px',
-                marginBottom: '24px',
+                padding: '20px',
+                marginBottom: '16px',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
                 display: 'flex',
                 justifyContent: 'space-between',

@@ -58,14 +58,14 @@ export default function BatchesPage() {
     };
 
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
             {/* Header */}
             <div style={{
                 background: '#fff',
                 border: '1px solid #e2e8f0',
                 borderRadius: '14px',
-                padding: '24px',
-                marginBottom: '24px',
+                padding: '20px',
+                marginBottom: '16px',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
                 display: 'flex',
                 justifyContent: 'space-between',

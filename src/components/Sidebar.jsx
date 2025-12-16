@@ -17,7 +17,10 @@ import {
     MessageCircle,
     Bell,
     Settings,
-    Shield
+    Shield,
+    Briefcase,
+    Activity,
+    MessageSquare
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -27,17 +30,14 @@ export default function Sidebar() {
     const pathname = usePathname();
     const router = useRouter();
 
+    // Standalone Overview item (not in a group)
+    const overviewItem = { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/' };
+
     const menuGroups = [
-        {
-            id: 'main',
-            label: 'Main',
-            items: [
-                        { id: 'dashboard', label: 'Overview', icon: LayoutDashboard, path: '/' },
-            ]
-        },
         {
             id: 'management',
             label: 'Management',
+            icon: Briefcase,
             items: [
                         { id: 'users', label: 'Users', icon: Users, path: '/users' },
                         { id: 'academies', label: 'Academies', icon: School, path: '/academies' },
@@ -49,6 +49,7 @@ export default function Sidebar() {
         {
             id: 'activities',
             label: 'Activities',
+            icon: Activity,
             items: [
                         { id: 'bookings', label: 'Bookings', icon: CalendarDays, path: '/bookings' },
                         { id: 'reviews', label: 'Reviews', icon: Star, path: '/reviews' },
@@ -58,6 +59,7 @@ export default function Sidebar() {
         {
             id: 'communication',
             label: 'Communication',
+            icon: MessageSquare,
             items: [
                         { id: 'chat', label: 'Chat', icon: MessageCircle, path: '/chat' },
                         { id: 'notifications', label: 'Notifications', icon: Bell, path: '/notifications' },
@@ -66,6 +68,7 @@ export default function Sidebar() {
         {
             id: 'system',
             label: 'System',
+            icon: Settings,
             items: [
                         { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
                         { id: 'roles', label: 'Role & Responsibilities', icon: Shield, path: '/roles' },
@@ -96,6 +99,7 @@ export default function Sidebar() {
 
     const [hoveredGroup, setHoveredGroup] = useState(null);
     const [activeGroup, setActiveGroup] = useState(null);
+    const [hoveredOverview, setHoveredOverview] = useState(false);
 
     const itemBaseStyle = {
         fontSize: '14px',
@@ -159,6 +163,62 @@ export default function Sidebar() {
             </Link>
 
             <nav style={{ flex: 1, overflowY: 'auto', position: 'relative', zIndex: 1 }}>
+                {/* Standalone Overview Item */}
+                <div style={{ marginBottom: '0' }}>
+                    <Link
+                        href={overviewItem.path}
+                        style={{ textDecoration: 'none' }}
+                        onClick={(e) => handleNavClick(e, overviewItem.path)}
+                    >
+                        <div
+                            style={{
+                                ...(styles.menuGroupHeader || {}),
+                                color: (isItemActive(overviewItem.path) || (hoveredOverview && !isItemActive(overviewItem.path))) ? '#ffffff' : ((styles.menuGroupHeader && styles.menuGroupHeader.color) || (isDarkMode ? 'rgba(255, 255, 255, 0.7)' : '#64748b')),
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                fontWeight: '700',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                borderRadius: '10px',
+                                background: isItemActive(overviewItem.path)
+                                    ? 'linear-gradient(90deg, #f97316 0%,rgb(245, 180, 112) 100%)'
+                                    : (hoveredOverview
+                                        ? 'linear-gradient(90deg, rgb(249, 115, 22) 0%, rgb(245, 180, 112) 100%)'
+                                        : 'transparent'),
+                                boxShadow: isItemActive(overviewItem.path)
+                                    ? '0 8px 18px rgba(249, 115, 22, 0.3)'
+                                    : (hoveredOverview
+                                        ? '0 4px 12px rgba(234, 177, 121, 0.35)'
+                                        : 'none'),
+                                border: hoveredOverview && !isItemActive(overviewItem.path)
+                                    ? '1px solid rgba(234, 177, 121, 0.5)'
+                                    : '1px solid rgba(34, 30, 30, 0.08)',
+                                transform: hoveredOverview && !isItemActive(overviewItem.path) ? 'translateX(4px)' : 'none',
+                            }}
+                            onMouseEnter={() => setHoveredOverview(true)}
+                            onMouseLeave={() => setHoveredOverview(false)}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ 
+                                    fontSize: '16px', 
+                                    width: '20px', 
+                                    display: 'flex', 
+                                    justifyContent: 'center',
+                                    color: (isItemActive(overviewItem.path) || hoveredOverview) ? '#ffffff' : '#64748b'
+                                }}>
+                                    {overviewItem.icon ? <overviewItem.icon size={16} color={(isItemActive(overviewItem.path) || hoveredOverview) ? '#ffffff' : '#64748b'} /> : null}
+                                </span>
+                                <span style={{ fontSize: '14px', fontWeight: '500', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
+                                    {overviewItem.label}
+                                </span>
+                            </div>
+                        </div>
+                    </Link>
+                </div>
+
                 {menuGroups.map(group => {
                     const isOpen = isGroupOpen(group.id);
                     const hasActiveItem = group.items.some(item => isItemActive(item.path)) || activeGroup === group.id;
@@ -199,9 +259,20 @@ export default function Sidebar() {
                                 onMouseEnter={() => setHoveredGroup(group.id)}
                                 onMouseLeave={() => setHoveredGroup(null)}
                             >
-                                <span style={{ fontSize: '14px', fontWeight: '500', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
-                                    {group.label}
-                                </span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <span style={{ 
+                                        fontSize: '16px', 
+                                        width: '20px', 
+                                        display: 'flex', 
+                                        justifyContent: 'center',
+                                        color: (hasActiveItem || (hoveredGroup === group.id && !hasActiveItem)) ? '#ffffff' : '#64748b'
+                                    }}>
+                                        {group.icon ? <group.icon size={16} color={(hasActiveItem || (hoveredGroup === group.id && !hasActiveItem)) ? '#ffffff' : '#64748b'} /> : null}
+                                    </span>
+                                    <span style={{ fontSize: '14px', fontWeight: '500', textTransform: 'capitalize', letterSpacing: '0.6px' }}>
+                                        {group.label}
+                                    </span>
+                                </div>
                                 <span
                                     aria-hidden="true"
                                     style={{

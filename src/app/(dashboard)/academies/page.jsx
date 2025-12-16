@@ -207,6 +207,11 @@ export default function AcademiesPage() {
         });
     }, [academyForm.selectedSports.join(',')]);
 
+    // Reset to first page when pageSize changes
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [pageSize]);
+
     const toggleStatus = (id) => {
         const target = academies.find(a => a.id === id);
         if (!target) return;
@@ -1905,7 +1910,7 @@ export default function AcademiesPage() {
     // If showing form, render full page form instead of list
     if (showAcademyModal) {
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
                 {renderConfirmModal()}
                 {logoCropper.isOpen && (
                     <div
@@ -3067,7 +3072,7 @@ export default function AcademiesPage() {
                                 )}
                             </div>
 
-                            {/* Latitude and Longitude */}
+                            {/* Latitude and Longitude (read-only, populated from map) */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                                 <div>
                                     <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: '#0f172a', fontFamily: navFontFamily }}>
@@ -3075,9 +3080,14 @@ export default function AcademiesPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        style={{ 
+                                            ...styles.input, 
+                                            fontFamily: navFontFamily,
+                                            backgroundColor: '#f9fafb',
+                                            cursor: 'not-allowed'
+                                        }}
                                         value={academyForm.latitude}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, latitude: e.target.value })}
+                                        readOnly
                                         placeholder="Latitude"
                                     />
                                 </div>
@@ -3087,9 +3097,14 @@ export default function AcademiesPage() {
                                     </label>
                                     <input
                                         type="text"
-                                        style={{ ...styles.input, fontFamily: navFontFamily }}
+                                        style={{ 
+                                            ...styles.input, 
+                                            fontFamily: navFontFamily,
+                                            backgroundColor: '#f9fafb',
+                                            cursor: 'not-allowed'
+                                        }}
                                         value={academyForm.longitude}
-                                        onChange={(e) => setAcademyForm({ ...academyForm, longitude: e.target.value })}
+                                        readOnly
                                         placeholder="Longitude"
                                     />
                                 </div>
@@ -4134,13 +4149,13 @@ export default function AcademiesPage() {
     // Detail view inline (instead of popup)
     if (viewMode === 'detail' && detailAcademy) {
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
                 {renderConfirmModal()}
                 <div style={{
                     background: '#fff',
                     border: '1px solid #e2e8f0',
                     borderRadius: '14px',
-                    padding: '24px',
+                    padding: '20px',
                     marginBottom: '16px',
                     boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
                     display: 'flex',
@@ -4304,14 +4319,14 @@ export default function AcademiesPage() {
 
     // List view (default)
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
             {renderConfirmModal()}
             <div style={{
                 background: '#fff',
                 border: '1px solid #e2e8f0',
                 borderRadius: '14px',
-                padding: '24px',
-                marginBottom: '24px',
+                padding: '20px',
+                marginBottom: '16px',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
                 display: 'flex',
                 justifyContent: 'space-between',
@@ -4817,8 +4832,8 @@ export default function AcademiesPage() {
                                             style={{
                                                 padding: '8px 12px',
                                                 borderRadius: '8px',
-                                                border: '1px solid #e2e8f0',
-                                                backgroundColor: isActive ? '#1e40af' : '#fff',
+                                                border: '1px solid rgb(12, 28, 49)',
+                                                backgroundColor: isActive ? '#d8d8ec' : '#d8d8ec',
                                                 color: isActive ? '#fff' : '#0f172a',
                                                 cursor: 'pointer',
                                                 fontWeight: isActive ? 700 : 500,
