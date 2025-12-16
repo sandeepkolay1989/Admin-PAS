@@ -174,7 +174,7 @@ export default function AgeGroupsPage() {
     // If showing form, render full page form instead of list
     if (showForm) {
         return (
-            <div style={styles.mainContent}>
+            <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
                 {confirmModal && (
                     <div style={styles.modalOverlay}>
                         <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '52px' }}>
@@ -444,7 +444,7 @@ export default function AgeGroupsPage() {
 
     // List view (default)
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
             {confirmModal && (
                 <div style={styles.modalOverlay}>
                     <div style={{ ...styles.modal, maxWidth: '420px', textAlign: 'center', position: 'relative', paddingTop: '52px' }}>
@@ -513,8 +513,8 @@ export default function AgeGroupsPage() {
                 background: '#fff',
                 border: '1px solid #e2e8f0',
                 borderRadius: '14px',
-                padding: '24px',
-                marginBottom: '24px',
+                padding: '20px',
+                marginBottom: '16px',
                 boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
                 display: 'flex',
                 justifyContent: 'space-between',

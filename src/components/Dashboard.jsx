@@ -42,6 +42,11 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
         return { ...sport, academyCount };
     });
 
+    // Get top 10 sports by academy count
+    const top10SportsByAcademy = [...sportStats]
+        .sort((a, b) => b.academyCount - a.academyCount)
+        .slice(0, 10);
+
     // Modern stat card component with theme support
     const ModernStatCard = ({ icon: Icon, value, label, change, bgColor, badge }) => (
         <div style={{
@@ -128,7 +133,7 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
     return (
         <div>
             {/* Header */}
-            <div style={{ marginBottom: '24px' }}>
+            <div style={{ marginBottom: '36px' }}>
                 <h1 style={styles.title}>
                     Good Afternoon, Admin!
                 </h1>
@@ -246,41 +251,62 @@ export default function Dashboard({ users = [], academies = [], sports = [], boo
 
                 {/* Sports Overview Card */}
                 <div style={styles.card}>
-                    <h3 style={{ ...styles.subtitle, margin: '0 0 20px 0', fontWeight: 'bold', fontSize: '18px', color: styles.title.color }}>
+                    <h2 style={{ ...styles.subtitle, margin: '0 0 20px 0', fontWeight: 'bold', fontSize: '18px', color: styles.title.color }}>
                         Sports Overview
-                    </h3>
+                    </h2>
+                    <div style={{ marginBottom: '12px', fontSize: '12px', color: styles.subtitle.color }}>
+                        Top 10 Sports by Academy
+                    </div>
                     <div>
-                        {sportStats.map((sport) => (
-                            <div
-                                key={sport.id}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '16px 0',
-                                    borderBottom: styles.td.borderBottom
-                                }}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                    <span style={{ fontSize: '24px' }}>{sport.icon}</span>
-                                    <div>
-                                        <div style={{ fontWeight: '600', color: styles.title.color }}>{sport.name}</div>
-                                        <div style={{ fontSize: '12px', color: styles.subtitle.color }}>Active sport</div>
+                        {top10SportsByAcademy.length > 0 ? (
+                            top10SportsByAcademy.map((sport, index) => (
+                                <div
+                                    key={sport.id}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '1px 0',
+                                        borderBottom: index < top10SportsByAcademy.length - 1 ? styles.td.borderBottom : 'none'
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{
+                                            width: '32px',
+                                            height: '32px',
+                                            borderRadius: '8px',
+                                            background: accentSoft,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: '16px',
+                                            fontWeight: 'bold',
+                                            color: accent,
+                                            flexShrink: 0
+                                        }}>
+                                            {index + 1}
+                                        </div>
+                                        <span style={{ fontSize: '20px' }}>{sport.icon || '🏅'}</span>
+                                        <div>
+                                            <div style={{ fontWeight: '600', color: styles.title.color }}>{sport.name}</div>
+                                        </div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{
+                                            fontSize: '16px',
+                                            fontWeight: 'bold',
+                                            color: styles.statValue.color,
+                                            marginBottom: '2px'
+                                        }}>
+                                            {sport.academyCount}
+                                        </div>
+                                        <div style={{ fontSize: '12px', color: styles.subtitle.color }}>Academies</div>
                                     </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                    <div style={{
-                                        fontSize: '20px',
-                                        fontWeight: 'bold',
-                                        color: styles.statValue.color,
-                                        marginBottom: '2px'
-                                    }}>
-                                        {sport.academyCount}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: styles.subtitle.color }}>Academies</div>
-                                </div>
-                            </div>
-                        ))}
+                            ))
+                        ) : (
+                            <p style={{ color: styles.subtitle.color, textAlign: 'center', padding: '20px' }}>No sports data available</p>
+                        )}
                     </div>
                 </div>
             </div>
