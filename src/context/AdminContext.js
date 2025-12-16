@@ -111,6 +111,33 @@ export const AdminProvider = ({ children }) => {
         ];
     });
 
+    // Fetch sports from API on load to keep the sports panel in sync
+    useEffect(() => {
+        const fetchSportsFromApi = async () => {
+            try {
+                const response = await fetch('https://dev.playasport.in/api/v2/sports');
+                if (!response.ok) throw new Error('Failed to fetch sports');
+
+                const result = await response.json();
+                if (Array.isArray(result?.data)) {
+                    const normalizedSports = result.data.map((sport, idx) => ({
+                        id: sport.id || `api-${idx + 1}`,
+                        name: sport.name || 'Unnamed Sport',
+                        icon: '',
+                        image: sport.image || '',
+                        isPopular: false,
+                        status: 'active',
+                    }));
+                    setSports(normalizedSports);
+                }
+            } catch (error) {
+                console.error('Error fetching sports from API:', error);
+            }
+        };
+
+        fetchSportsFromApi();
+    }, [setSports]);
+
     useEffect(() => {
         localStorage.setItem('sports', JSON.stringify(sports));
     }, [sports]);

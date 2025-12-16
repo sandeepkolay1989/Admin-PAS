@@ -264,9 +264,9 @@ export default function SportsPage() {
                     : sport
             ));
         } else {
-        const newId = sports.length > 0 ? Math.max(...sports.map(s => s.id)) + 1 : 1;
-        setSports([...sports, {
-            id: newId,
+            const newId = `local-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            setSports([...sports, {
+                id: newId,
                 ...sportData
             }]);
         }
