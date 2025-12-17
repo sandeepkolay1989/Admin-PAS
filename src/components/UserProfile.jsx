@@ -1,13 +1,19 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { Camera, Lock, Sun, Moon, LogOut } from 'lucide-react';
 
 export default function UserProfile({ profile, onUpdateProfile, onLogout, onChangePassword }) {
     const styles = useTheme();
     const { toggleTheme, isDarkMode } = styles;
     const [isOpen, setIsOpen] = useState(false);
+    const [hasMounted, setHasMounted] = useState(false);
     const dropdownRef = useRef(null);
     const fileInputRef = useRef(null);
+
+    useEffect(() => {
+        setHasMounted(true);
+    }, []);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -21,6 +27,11 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
         };
     }, []);
 
+    // Avoid any SSR/client mismatch by only rendering after mount
+    if (!hasMounted) {
+        return null;
+    }
+
     const handleImageUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -32,14 +43,32 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
         }
     };
 
+    // Stable avatar style; only backgroundImage varies with avatar
+    const hasAvatar = Boolean(profile && profile.avatar);
+    const avatarUrl = hasAvatar ? String(profile.avatar) : '';
+
+    const avatarStyle = {
+        width: '40px',
+        height: '40px',
+        borderRadius: '50%',
+        backgroundColor: '#1e40af',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: '18px',
+        color: 'white',
+        boxShadow: '0 2px 4px rgba(30, 64, 175, 0.2)',
+        cursor: 'pointer',
+        backgroundImage: avatarUrl ? `url(${avatarUrl})` : 'none',
+        backgroundSize: avatarUrl ? 'cover' : 'auto',
+        backgroundPosition: 'center',
+        overflow: 'hidden'
+    };
+
     return (
         <div style={styles.userProfile} ref={dropdownRef}>
             <div
-                style={{
-                    ...styles.avatar,
-                    backgroundImage: profile && profile.avatar ? `url(${profile.avatar})` : 'none',
-                    cursor: 'pointer'
-                }}
+                style={avatarStyle}
                 onClick={() => setIsOpen(!isOpen)}
             >
                 {!(profile && profile.avatar) && (profile && profile.name ? profile.name.charAt(0).toUpperCase() : 'A')}
@@ -58,7 +87,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>📷</span> Add/Change Logo
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Camera size={16} />
+                        </span> Add/Change Logo
                     </div>
 
                     <input
@@ -75,7 +106,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>🔒</span> Change Password
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <Lock size={16} />
+                        </span> Change Password
                     </div>
 
                     <div
@@ -84,7 +117,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(14, 165, 233, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>{isDarkMode ? '☀️' : '🌙'}</span> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            {isDarkMode ? <Sun size={16} /> : <Moon size={16} />}
+                        </span> {isDarkMode ? 'Light Mode' : 'Dark Mode'}
                     </div>
 
                     <div
@@ -93,7 +128,9 @@ export default function UserProfile({ profile, onUpdateProfile, onLogout, onChan
                         onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                     >
-                        <span>🚪</span> Logout
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                            <LogOut size={16} />
+                        </span> Logout
                     </div>
                 </div>
             )}

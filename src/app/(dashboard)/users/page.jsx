@@ -1,12 +1,14 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAdmin } from '@/context/AdminContext';
 import { useTheme } from '@/context/ThemeContext';
 import Modal from '@/components/Modal';
 import Input from '@/components/Input';
 import Button from '@/components/Button';
+import { Phone, Mail, MapPin, CalendarDays, Pencil, Trash2, Users, UserCheck, GraduationCap, CheckCircle2, Search, Upload, DownloadCloud } from 'lucide-react';
 import { X, HelpCircle } from 'lucide-react';
-
+import { getUsers } from '@/lib/api.js/users';
+import { API } from '@/lib/api.js/api';
 export default function UsersPage() {
     const { users, setUsers } = useAdmin();
     const styles = useTheme();
@@ -19,6 +21,8 @@ export default function UsersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [viewMode, setViewMode] = useState('list'); // list | grid
     const [showAddModal, setShowAddModal] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const emptyUser = {
         firstName: '',
         lastName: '',
@@ -41,6 +45,33 @@ export default function UsersPage() {
         isDeleted: false,
         deletedAt: null,
     };
+
+    useEffect(() => {
+        const getUsers = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const result = await authFetch(API.users);
+                if (result.status && result.data && Array.isArray(result.data)) {
+                    setUsers(result.data.map(user => ({
+                        id: user.id,
+                        firstName: user.firstName,
+                        lastName: user.lastName,
+                        email: user.email,
+                        mobile: user.mobile,
+                        password: user.password,
+                    })));
+                } else {
+                    setError(result.message);
+                }
+            } catch (error) {
+                setError(error.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+        getUsers();
+    }, [setUsers]);
     const [newUser, setNewUser] = useState(emptyUser);
     const [confirmModal, setConfirmModal] = useState(null); // { id, nextStatus }
 
@@ -48,7 +79,92 @@ export default function UsersPage() {
         if (!value) return '';
         const date = new Date(value);
         if (Number.isNaN(date.getTime())) return '';
-        return date.toLocaleDateString();
+        // Use a fixed locale/timezone to avoid server/client mismatch during hydration
+        return date.toLocaleDateString('en-GB', { timeZone: 'UTC' });
+    };
+
+    const formatTime = (dateString) => {
+        if (!dateString) return '';
+        try {
+            const date = new Date(dateString);
+            if (Number.isNaN(date.getTime())) return '';
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${hours}:${minutes}`;
+        } catch {
+            return '';
+        }
+    };
+
+    const exportUsersToCSV = () => {
+        // CSV headers
+        const headers = ['First Name', 'Last Name', 'Email', 'Mobile Number', 'Added By', 'Created Date', 'Time (HH:MM)', 'Status', 'Date of Birth'];
+        
+        // Prepare data rows
+        const rows = users
+            .filter(user => !user.isDeleted) // Only export non-deleted users
+            .map(user => {
+                // Extract timestamp from user ID if it's in format USR-timestamp
+                let createDate = '';
+                let createTime = '';
+                let addedBy = 'Admin';
+                
+                if (user.id && user.id.startsWith('USR-')) {
+                    const timestamp = parseInt(user.id.replace('USR-', ''));
+                    if (!isNaN(timestamp)) {
+                        const date = new Date(timestamp);
+                        createDate = date.toISOString().split('T')[0];
+                        createTime = formatTime(date.toISOString());
+                    }
+                }
+                
+                // Use user's addedBy if available, otherwise default to 'Admin'
+                if (user.addedBy) {
+                    addedBy = user.addedBy;
+                }
+                
+                // Use user's createDate if available
+                if (user.createDate) {
+                    createDate = user.createDate;
+                    createTime = formatTime(user.createDate);
+                }
+                
+                return [
+                    user.firstName || '',
+                    user.lastName || '',
+                    user.email || '',
+                    user.mobile || '',
+                    addedBy,
+                    createDate,
+                    createTime,
+                    user.isActive ? 'Active' : 'Inactive',
+                    user.dob ? formatDate(user.dob) : ''
+                ];
+            });
+        
+        // Combine headers and rows
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => {
+                // Escape commas and quotes in cell values
+                const cellStr = String(cell || '');
+                if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+                    return `"${cellStr.replace(/"/g, '""')}"`;
+                }
+                return cellStr;
+            }).join(','))
+        ].join('\n');
+        
+        // Create blob and download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `users_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const toggleUserStatus = (id) => {
@@ -189,57 +305,50 @@ export default function UsersPage() {
         );
     };
 
-    const StatusToggle = ({ user }) => (
-        <div
-            onClick={() => toggleUserStatus(user.id)}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                cursor: user.isDeleted ? 'not-allowed' : 'pointer',
-                userSelect: 'none',
-                opacity: user.isDeleted ? 0.5 : 1
-            }}
-            title={user.isDeleted ? 'Deleted users cannot change status' : `Click to ${user.isActive ? 'deactivate' : 'activate'} user`}
-        >
+    const StatusToggle = ({ user }) => {
+        const isActive = user.isActive && !user.isDeleted;
+        const toggleStyle = useMemo(() => ({
+            width: '50px',
+            height: '20px',
+            borderRadius: '999px',
+            background: isActive ? '#023B84' : '#cbd5e1',
+            position: 'relative',
+            transition: 'all 0.2s ease',
+            boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
+        }), [isActive]);
+        const thumbStyle = useMemo(() => ({
+            position: 'absolute',
+            top: '4px',
+            left: isActive ? '36px' : '3px',
+            width: '10px',
+            height: '12px',
+            borderRadius: '50%',
+            background: '#ffffff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
+            transition: 'left 0.2s ease'
+        }), [isActive]);
+        const containerStyle = useMemo(() => ({
+            display: 'flex',
+            alignItems: 'center',
+            cursor: user.isDeleted ? 'not-allowed' : 'pointer',
+            userSelect: 'none',
+            opacity: user.isDeleted ? 0.5 : 1
+        }), [user.isDeleted]);
+        return (
             <div
-                style={{
-                    width: '50px',
-                    height: '22px',
-                    borderRadius: '999px',
-                    background: user.isActive && !user.isDeleted ? '#1d4ed8' : '#cbd5e1',
-                    position: 'relative',
-                    transition: 'all 0.2s ease',
-                    boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.1)'
-                }}
+                onClick={() => toggleUserStatus(user.id)}
+                style={containerStyle}
+                title={user.isDeleted ? 'Deleted users cannot change status' : 'Toggle status'}
             >
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: '4px',
-                        left: user.isActive && !user.isDeleted ? '28px' : '4px',
-                        width: '14px',
-                        height: '14px',
-                        borderRadius: '50%',
-                        background: '#ffffff',
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.25)',
-                        transition: 'left 0.2s ease'
-                    }}
-                />
+                <div style={toggleStyle}>
+                    <div style={thumbStyle} />
+                </div>
             </div>
-            <span style={{
-                color: user.isDeleted ? '#ef4444' : user.isActive ? '#1d4ed8' : '#64748b',
-                fontWeight: 700,
-                fontSize: '12px',
-                minWidth: '64px'
-            }}>
-                {user.isDeleted ? 'Deleted' : user.isActive ? 'Active' : 'Inactive'}
-            </span>
-        </div>
-    );
+        );
+    };
 
     return (
-        <div style={styles.mainContent}>
+        <div style={{ ...styles.mainContent, paddingTop: '20px' }}>
             {/* Confirm modal */}
             {confirmModal && (
                 <div style={styles.modalOverlay}>
@@ -275,14 +384,14 @@ export default function UsersPage() {
                         >
                             <X size={18} color="#0f172a" />
                         </button>
-                        <h3 style={{ margin: '0 0 12px 0', color: '#de0404', fontWeight: 700 }}>Are You Sure?</h3>
+                        <h3 style={{ margin: '0 0 12px 0', color: '#f97316', fontWeight: 700 }}>Are You Sure?</h3>
                         <p style={{ color: '#242222', marginBottom: '20px' }}>
                             Do you want to change this status to <span style={{ color: '#f97316', fontWeight: 700 }}>{confirmModal.nextStatus || 'Inactive'}</span>?
                         </p>
                         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button
                                 onClick={handleCancelStatus}
-                                style={{ ...styles.button, backgroundColor: '#e5e7eb', color: '#111827' }}
+                                style={{ ...styles.button, backgroundColor: '#f97316', color: '#ffffff' }}
                             >
                                 Cancel
                             </button>
@@ -290,7 +399,7 @@ export default function UsersPage() {
                                 onClick={handleConfirmStatus}
                                 style={{
                                     ...styles.buttonSuccess,
-                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    background: 'linear-gradient(135deg, #023B84 0%, #023B84 100%)',
                                     color: '#ffffff',
                                     border: 'none',
                                     borderRadius: '10px',
@@ -305,6 +414,71 @@ export default function UsersPage() {
                     </div>
                 </div>
             )}
+
+            {/* Header */}
+            <div style={{
+                background: '#fff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '20px',
+                marginBottom: '16px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+            }}>
+                <div>
+                    <h1 style={{
+                        fontSize: '28px',
+                        fontWeight: 700,
+                        color: '#0f172a',
+                        margin: 0,
+                        marginBottom: '4px',
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
+                    }}>
+                        User Management
+                    </h1>
+                    <p style={{
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        color: '#64748b',
+                        margin: 0,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif"
+                    }}>
+                        Manage users and student profiles
+                    </p>
+                </div>
+                <button
+                    onClick={exportUsersToCSV}
+                    style={{
+                        background: 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        padding: '12px 20px',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif",
+                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)',
+                        transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(249, 115, 22, 0.4)';
+                    }}
+                    onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(249, 115, 22, 0.3)';
+                    }}
+                >
+                    <DownloadCloud size={18} />
+                    Export CSV
+                </button>
+            </div>
 
             {/* Filters / toggles */}
             <FiltersBar
@@ -362,14 +536,14 @@ export default function UsersPage() {
                 {/* form fields unchanged from previous version for brevity */}
                 {/* ... */}
             </Modal>
-        </div>
+            </div>
     );
 }
 
 function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, userTypeFilter, setUserTypeFilter, statusFilter, setStatusFilter, filteredCount, totalCount }) {
     return (
-        <div style={{
-            display: 'flex',
+            <div style={{ 
+                display: 'flex', 
             flexDirection: 'column',
             gap: '12px',
             marginBottom: '12px',
@@ -380,21 +554,21 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
             boxShadow: '0 8px 24px rgba(15, 23, 42, 0.06)'
         }}>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
-                    <span style={{ color: '#94a3b8' }}>🔍</span>
-                    <input
-                        type="text"
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '12px', flex: '0 1 240px', maxWidth: '100%' }}>
+                    <Search size={18} color="#94a3b8" />
+                <input
+                    type="text"
                         placeholder="Search..."
-                        style={{
+                    style={{ 
                             border: 'none',
                             outline: 'none',
                             width: '100%',
                             fontSize: '14px',
                             color: '#0f172a',
-                        }}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
+                    }}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     {[
@@ -420,7 +594,7 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
                                     background: active
                                         ? (isGrid
                                             ? 'linear-gradient(135deg, #f97316 0%, #fb923c 100%)'
-                                            : 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)')
+                                            : 'linear-gradient(135deg, #023B84 0%, #023B84 100%)')
                                         : 'linear-gradient(135deg, #e2e8f0 0%, #f8fafc 100%)',
                                     boxShadow: active ? '0 8px 18px rgba(0,0,0,0.12)' : '0 2px 6px rgba(0,0,0,0.06)',
                                     color: active ? '#fff' : '#475569'
@@ -478,22 +652,22 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <span style={{ color: '#475569', fontSize: '13px' }}>Filter by status:</span>
-                    <select
-                        style={{
-                            ...styles.input,
-                            width: '180px',
-                            marginBottom: 0,
+                <select
+                    style={{
+                        ...styles.input,
+                        width: '180px',
+                        marginBottom: 0,
                             padding: '10px 12px',
-                        }}
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                    >
-                        <option value="all">All Status</option>
-                        <option value="active">Active Only</option>
-                        <option value="inactive">Inactive Only</option>
+                    }}
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                    <option value="all">All Status</option>
+                    <option value="active">Active Only</option>
+                    <option value="inactive">Inactive Only</option>
                         <option value="deleted">Deleted Only</option>
-                    </select>
-                </div>
+                </select>
+            </div>
                 <div style={{ color: '#475569', fontSize: '13px' }}>
                     Showing {filteredCount} of {totalCount} users
                 </div>
@@ -504,10 +678,10 @@ function FiltersBar({ styles, searchTerm, setSearchTerm, viewMode, setViewMode, 
 
 function StatsBar({ styles, totalUsers, totalGuardians, totalStudents, activeUsers }) {
     const stats = [
-        { label: 'Total Users', value: totalUsers, icon: '👤' },
-        { label: 'Guardians', value: totalGuardians, icon: '🧑‍🤝‍🧑' },
-        { label: 'Students', value: totalStudents, icon: '🎓' },
-        { label: 'Active Users', value: activeUsers, icon: '✅' },
+        { label: 'Total Users', value: totalUsers, icon: Users },
+        { label: 'Guardians', value: totalGuardians, icon: UserCheck },
+        { label: 'Students', value: totalStudents, icon: GraduationCap },
+        { label: 'Active Users', value: activeUsers, icon: CheckCircle2 },
     ];
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '12px' }}>
@@ -531,14 +705,16 @@ function StatsBar({ styles, totalUsers, totalGuardians, totalStudents, activeUse
                         alignItems: 'center',
                         justifyContent: 'center',
                         fontSize: '18px'
-                    }}>{stat.icon}</div>
+                    }}>
+                        {stat.icon ? <stat.icon size={18} color="#0f172a" /> : null}
+                    </div>
                     <div>
                         <div style={{ fontSize: '13px', color: '#64748b' }}>{stat.label}</div>
                         <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a' }}>{stat.value}</div>
                     </div>
                 </div>
             ))}
-        </div>
+                                    </div>
     );
 }
 
@@ -570,7 +746,7 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                     <div style={{
                                         width: '44px',
                                         height: '44px',
-                                        borderRadius: '50%',
+                                                borderRadius: '50%',
                                         background: '#f97316',
                                         color: '#fff',
                                         display: 'flex',
@@ -589,32 +765,34 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                             </span>
                                             <StatusPill user={user} />
                                         </div>
-                                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '13px', color: '#475569' }}>
-                                            <span>📞 {user.mobile || '-'}</span>
-                                            <span>📧 {user.email}</span>
-                                            <span>🎂 {formatDate(user.dob) || '-'}</span>
-                                            <span>📍 {cityState || '—'}</span>
-                                        </div>
+                                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '13px', color: '#475569' }}>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> {user.mobile || '-'}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> {user.email}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><CalendarDays size={14} /> {formatDate(user.dob) || '-'}</span>
+                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> {cityState || '—'}</span>
+                                    </div>
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                                     <StatusToggle user={user} />
-                                    <button
+                                        <button
                                         style={{ ...styles.button, padding: '6px 10px', fontSize: '12px' }}
                                         onClick={() => alert(`Edit user: ${fullName}`)}
                                         disabled={user.isDeleted}
+                                        title="Edit"
                                     >
-                                        ✏️ Edit
-                                    </button>
-                                    <button
+                                        <Pencil size={14} color="#ffffff" />
+                                        </button>
+                                        <button
                                         style={{ ...styles.buttonDanger, padding: '6px 10px', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
-                                        onClick={() => handleDeleteUser(user.id)}
+                                            onClick={() => handleDeleteUser(user.id)}
                                         disabled={user.isDeleted}
-                                    >
-                                        🗑️ Delete
-                                    </button>
-                                </div>
-                            </div>
+                                        title="Delete"
+                                        >
+                                        <Trash2 size={14} color="#ffffff" />
+                                        </button>
+                                    </div>
+                    </div>
                         );
                     })}
                 </>
@@ -634,8 +812,8 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                 padding: '14px',
                                 boxShadow: '0 10px 24px rgba(15,23,42,0.05)',
                                 background: '#fff',
-                                display: 'flex',
-                                flexDirection: 'column',
+                    display: 'flex', 
+                    flexDirection: 'column', 
                                 gap: '10px'
                             }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -653,8 +831,8 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                             fontSize: '16px',
                                         }}>
                                             {initials}
-                                        </div>
-                                        <div>
+                    </div>
+                    <div>
                                             <div style={{ fontWeight: 700, color: '#0f172a' }}>{fullName}</div>
                                             <div style={{ fontSize: '12px', color: '#475569' }}>{role}</div>
                                         </div>
@@ -668,7 +846,7 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                         }}>
                                             {role}
                                         </span>
-                                    </div>
+                    </div>
                                     <span style={{
                                         fontSize: '12px',
                                         color: '#fff',
@@ -681,16 +859,16 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                     </span>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', rowGap: '6px', columnGap: '10px', fontSize: '13px', color: '#475569' }}>
-                                    <span>📞 {user.mobile || '-'}</span>
-                                    <span>📧 {user.email}</span>
-                                    <span>📍 {cityState || '—'}</span>
-                                    <span>🎂 {formatDate(user.dob) || '-'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> {user.mobile || '-'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> {user.email}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> {cityState || '—'}</span>
+                                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><CalendarDays size={14} /> {formatDate(user.dob) || '-'}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#0f172a' }}>
                                     <div style={{ display: 'flex', gap: '16px' }}>
                                         <div>Bookings: <strong>{user.bookingsCount || 0}</strong></div>
                                         <div>Active: <strong>{user.activeCount || (user.isActive ? 1 : 0)}</strong></div>
-                                    </div>
+                    </div>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                                         <StatusToggle user={user} />
                                         <button
@@ -698,23 +876,23 @@ function ListGrid({ styles, viewMode, users, formatDate, toggleUserStatus, handl
                                             onClick={() => alert(`Edit user: ${fullName}`)}
                                             disabled={user.isDeleted}
                                         >
-                                            ✏️
+                                            <Pencil size={14} color="#ffffff" />
                                         </button>
                                         <button
                                             style={{ ...styles.buttonDanger, padding: '6px 10px', fontSize: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
                                             onClick={() => handleDeleteUser(user.id)}
                                             disabled={user.isDeleted}
                                         >
-                                            🗑️
+                                            <Trash2 size={14} color="#ffffff" />
                                         </button>
-                                    </div>
-                                </div>
-                            </div>
+                        </div>
+                        </div>
+                    </div>
                         );
                     })}
                 </div>
             )}
-        </div>
+                    </div>
     );
 }
 
@@ -723,16 +901,16 @@ function Pagination({ styles, start, end, filteredCount, safeCurrentPage, totalP
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '12px', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span style={{ color: styles.subtitle.color, fontSize: '13px' }}>Rows per page:</span>
-                <select
+                        <select
                     style={{ ...styles.input, width: '90px', marginBottom: 0, padding: '8px 10px' }}
                     value={pageSize}
                     onChange={(e) => setPageSize(Number(e.target.value))}
-                >
+                        >
                     {[5, 10, 20, 50].map((size) => (
                         <option key={size} value={size}>{size}</option>
                     ))}
-                </select>
-            </div>
+                        </select>
+                    </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <span style={{ color: styles.subtitle.color, fontSize: '13px' }}>
                     Showing {start + 1}-{Math.min(end, filteredCount)} of {filteredCount}
@@ -763,7 +941,7 @@ function Pagination({ styles, start, end, filteredCount, safeCurrentPage, totalP
                                         fontWeight: isActive ? 700 : 500,
                                         minWidth: '36px'
                                     }}
-                                >
+                        >
                                     {page}
                                 </button>
                             );
@@ -776,8 +954,8 @@ function Pagination({ styles, start, end, filteredCount, safeCurrentPage, totalP
                     >
                         Next
                     </button>
+                    </div>
                 </div>
-            </div>
         </div>
     );
 }
